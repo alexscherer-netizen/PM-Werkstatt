@@ -273,6 +273,7 @@ footer{border-top:1px solid var(--line);margin-top:2.5rem;padding-top:1.4rem;col
   <section class="view" id="v-quiz"></section>
   <section class="view" id="v-karten"></section>
   <section class="view" id="v-pruefung"></section>
+  <section class="view" id="v-ablauf"></section>
   <section class="view" id="v-faelle"></section>
   <section class="view" id="v-formeln"></section>
   <section class="view" id="v-glossar"></section>
@@ -305,8 +306,10 @@ footer{border-top:1px solid var(--line);margin-top:2.5rem;padding-top:1.4rem;col
 const S = {
   read: JSON.parse(localStorage.getItem('pmw_read') || '[]'),
   quiz: JSON.parse(localStorage.getItem('pmw_quiz') || '{}'),
+  abl: JSON.parse(localStorage.getItem('pmw_abl') || '{}'),
   save(){ localStorage.setItem('pmw_read', JSON.stringify(this.read));
-          localStorage.setItem('pmw_quiz', JSON.stringify(this.quiz)); }
+          localStorage.setItem('pmw_quiz', JSON.stringify(this.quiz));
+          localStorage.setItem('pmw_abl', JSON.stringify(this.abl)); }
 };
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
@@ -1677,6 +1680,411 @@ T-02, T-04 und T-05 prüfen ausdrücklich das Fehlverhalten. Wer nur den erfolgr
 <p>Mit der Abnahme beim Werkvertrag wird die Vergütung fällig, die Gefahr geht auf den Auftraggeber über, die Beweislast für Mängel kehrt sich um und die zweijährige Verjährungsfrist beginnt. Deshalb ist das Protokoll kein Formalismus, sondern das wichtigste Dokument des Projektabschlusses.</p>`}
 );
 
+CH.push(
+{t:'Vertiefung: Netzplan und Terminplanung', sub:'Netzplanarten, Zeitabstände, drei Pufferarten, Terminverdichtung, PERT-Wahrscheinlichkeit', tag:'Planung', html:`
+<h3>Die drei Netzplanarten</h3>
+<div class="tblwrap"><table>
+<tr><th>Art</th><th>Vorgang liegt im…</th><th>Merkmal</th></tr>
+<tr><td><b>Vorgangsknotennetz</b> (MPM/PDM)</td><td>Knoten</td><td>In Deutschland Standard, alle vier Anordnungsbeziehungen möglich, keine Scheinvorgänge nötig</td></tr>
+<tr><td><b>Vorgangspfeilnetz</b> (CPM)</td><td>Pfeil</td><td>Knoten sind Ereignisse; für reine Abhängigkeiten sind <b>Scheinvorgänge</b> mit Dauer 0 nötig</td></tr>
+<tr><td><b>Ereignisknotennetz</b> (PERT)</td><td>–</td><td>Knoten sind Ereignisse, Vorgänge nur implizit; klassisch mit Dreipunktschätzung kombiniert</td></tr>
+</table></div>
+<p>Prüfungsaufgaben verwenden fast immer das Vorgangsknotennetz. Der Begriff <b>Scheinvorgang</b> sollte trotzdem sitzen: Er stellt im Vorgangspfeilnetz eine Abhängigkeit dar, ohne selbst Zeit oder Ressourcen zu verbrauchen.</p>
+
+<h3>Anordnungsbeziehungen mit Zeitabstand</h3>
+<p>Bisher haben wir Beziehungen ohne Abstand betrachtet. In der Praxis gibt es zwei Ergänzungen:</p>
+<ul class="tight">
+<li><b>Minimalabstand (Lag)</b> – zwischen zwei Vorgängen muss eine Wartezeit liegen. Beispiel: Nach der Bestellung vergehen mindestens 10 Tage Lieferzeit, bevor die Installation beginnen kann. Formel: FAZ<sub>B</sub> ≥ FEZ<sub>A</sub> + 10.</li>
+<li><b>Maximalabstand (Lead)</b> – zwischen zwei Vorgängen darf höchstens eine bestimmte Zeit liegen. Beispiel: Zwischen Datenmigration und Freigabe dürfen maximal 2 Tage liegen, sonst ist der Datenstand veraltet.</li>
+</ul>
+<p>Eine <b>Anfangsfolge mit Minimalabstand</b> ist das übliche Mittel für überlappende Vorgänge: „Der Rollout in Hamburg beginnt 5 Tage nach dem Start in Berlin" – das spart Zeit gegenüber der strikten Normalfolge, ohne die fachliche Reihenfolge aufzugeben.</p>
+
+<h3>Die drei Pufferarten sauber unterschieden</h3>
+<div class="tblwrap"><table>
+<tr><th>Puffer</th><th>Formel</th><th>Aussage</th></tr>
+<tr><td><b>Gesamtpuffer GP</b></td><td>SAZ − FAZ</td><td>Verschiebung ohne Gefährdung des <b>Endtermins</b>. Gehört dem Projekt, nicht dem Vorgang.</td></tr>
+<tr><td><b>Freier Puffer FP</b></td><td>min(FAZ der Nachfolger) − FEZ</td><td>Verschiebung, ohne den frühesten Start eines <b>Nachfolgers</b> zu verändern.</td></tr>
+<tr><td><b>Unabhängiger Puffer UP</b></td><td>max(0; min FAZ<sub>Nachf.</sub> − max SEZ<sub>Vorg.</sub> − Dauer)</td><td>Verschiebung, selbst wenn alle Vorgänger <b>spätest</b> enden und alle Nachfolger <b>frühest</b> starten.</td></tr>
+</table></div>
+<p>Es gilt immer <b>UP ≤ FP ≤ GP</b>. Wer beim Nachrechnen etwas anderes herausbekommt, hat sich verrechnet – das ist die schnellste Kontrolle.</p>
+
+<h3>Durchgerechnetes Beispiel</h3>
+<div class="tblwrap"><table>
+<tr><th>Vorgang</th><th>Dauer</th><th>Vorgänger</th><th>FAZ</th><th>FEZ</th><th>SAZ</th><th>SEZ</th><th>GP</th><th>FP</th><th>UP</th></tr>
+<tr style="color:var(--amber)"><td>A</td><td>4</td><td>–</td><td>0</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td></tr>
+<tr style="color:var(--amber)"><td>B</td><td>6</td><td>A</td><td>4</td><td>10</td><td>4</td><td>10</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>C</td><td>3</td><td>A</td><td>4</td><td>7</td><td>9</td><td>12</td><td>5</td><td>0</td><td>0</td></tr>
+<tr><td>D</td><td>2</td><td>C</td><td>7</td><td>9</td><td>12</td><td>14</td><td>5</td><td>5</td><td>0</td></tr>
+<tr style="color:var(--amber)"><td>E</td><td>4</td><td>B</td><td>10</td><td>14</td><td>10</td><td>14</td><td>0</td><td>0</td><td>0</td></tr>
+<tr style="color:var(--amber)"><td>F</td><td>5</td><td>D, E</td><td>14</td><td>19</td><td>14</td><td>19</td><td>0</td><td>0</td><td>0</td></tr>
+</table></div>
+<p><b>Projektdauer 19 Tage, kritischer Pfad A → B → E → F.</b></p>
+<div class="calcbox small">
+<b>Die Rechnung Schritt für Schritt</b><br>
+<b>Vorwärts:</b> F: FAZ = max(FEZ<sub>D</sub> = 9; FEZ<sub>E</sub> = 14) = 14. Das Maximum gilt, weil F beide Vorgänger braucht.<br>
+<b>Rückwärts:</b> A: SEZ = min(SAZ<sub>B</sub> = 4; SAZ<sub>C</sub> = 9) = 4. Das Minimum gilt, damit kein Nachfolger verzögert wird.<br><br>
+<b>Vorgang C:</b> GP = SAZ − FAZ = 9 − 4 = 5. FP = FAZ<sub>D</sub> − FEZ<sub>C</sub> = 7 − 7 = 0.<br>
+Deutung: C darf sich um 5 Tage verschieben, ohne den Endtermin zu gefährden – aber um <i>keinen einzigen Tag</i>, ohne dass sich der früheste Start von D verschiebt. Der Puffer liegt in der Kette C→D gemeinsam, nicht bei C allein.<br><br>
+<b>Vorgang D:</b> GP = 12 − 7 = 5. FP = FAZ<sub>F</sub> − FEZ<sub>D</sub> = 14 − 9 = 5.<br>
+Deutung: D kann seine 5 Tage voll selbst verbrauchen, weil F ohnehin erst am Tag 14 durch E getrieben wird.<br><br>
+<b>Unabhängiger Puffer von D:</b> UP = max(0; FAZ<sub>F</sub> − SEZ<sub>C</sub> − Dauer<sub>D</sub>) = max(0; 14 − 14 − 2) = <b>0</b>.<br>
+Deutung: Endet der Vorgänger C spätestmöglich (Tag 14), bleibt für D keine Reserve mehr. Der unabhängige Puffer ist der einzige, den ein Vorgang wirklich „besitzt".<br><br>
+Kontrolle: für alle Vorgänge gilt UP ≤ FP ≤ GP. ✔
+</div>
+<div class="note warn"><b>Merksatz zur Pufferverwendung</b>
+Verbraucht ein Vorgang seinen Gesamtpuffer vollständig, verlieren alle nachfolgenden Vorgänge auf demselben Weg ihre Reserve. Deshalb wird Pufferverbrauch im Statusbericht ausgewiesen – nicht erst dann, wenn der Endtermin kippt.</div>
+
+<h3>Terminverdichtung: Crashing rechnen</h3>
+<p>Wenn der Endtermin nicht reicht, wird die Dauer kritischer Vorgänge durch zusätzliche Ressourcen verkürzt. Entscheidend ist die <b>Kostensteigerungsrate</b> je eingesparten Tag:</p>
+<p><code>Kostensteigerungsrate = (Crashkosten − Normalkosten) / (Normaldauer − Crashdauer)</code></p>
+<div class="tblwrap"><table>
+<tr><th>Vorgang</th><th>kritisch?</th><th>Normal</th><th>Crash</th><th>max. Verkürzung</th><th>€ je Tag</th></tr>
+<tr><td>A</td><td>ja</td><td>4 T / 4.000 €</td><td>3 T / 5.200 €</td><td>1 Tag</td><td>1.200 €</td></tr>
+<tr><td>B</td><td>ja</td><td>6 T / 9.000 €</td><td>4 T / 10.600 €</td><td>2 Tage</td><td><b style="color:var(--teal)">800 €</b></td></tr>
+<tr><td>E</td><td>ja</td><td>4 T / 6.000 €</td><td>3 T / 7.500 €</td><td>1 Tag</td><td>1.500 €</td></tr>
+<tr><td>C</td><td>nein</td><td>3 T / 2.400 €</td><td>2 T / 2.900 €</td><td>1 Tag</td><td>500 €</td></tr>
+</table></div>
+<div class="calcbox small">
+<b>Aufgabe:</b> Projekt um 3 Tage verkürzen, möglichst günstig.<br>
+Schritt 1: B um 2 Tage verkürzen → 2 × 800 € = 1.600 €. Projektdauer 19 → 17 Tage.<br>
+Schritt 2: Prüfen, ob der kritische Pfad noch derselbe ist. Der Weg A → C → D → F hatte 5 Tage Puffer, davon sind nun 2 aufgebraucht – er bleibt unkritisch.<br>
+Schritt 3: Nächstgünstiger kritischer Vorgang ist A mit 1.200 € → 1 Tag. Projektdauer 16 Tage.<br>
+<b>Gesamtkosten der Verdichtung: 2.800 €.</b><br>
+<i>Falsch wäre</i>, Vorgang C zu verkürzen: Er ist mit 500 € je Tag am billigsten, liegt aber nicht auf dem kritischen Pfad und verkürzt das Projekt um keinen einzigen Tag.
+</div>
+<p>Nach jeder Verkürzung muss geprüft werden, ob ein anderer Weg kritisch geworden ist. Bei mehreren parallel kritischen Pfaden muss auf <i>allen</i> gleichzeitig verkürzt werden, sonst bringt die Maßnahme nichts.</p>
+
+<h3>PERT: Wahrscheinlichkeit eines Termins</h3>
+<p>Sind die Vorgangsdauern per Dreipunktschätzung ermittelt, lässt sich die Wahrscheinlichkeit berechnen, einen Termin zu halten. Die Standardabweichung des kritischen Pfads ergibt sich aus den Einzelabweichungen:</p>
+<p><code>σ<sub>Pfad</sub> = √(σ₁² + σ₂² + … + σₙ²)</code> · <code>z = (Zieltermin − erwartete Dauer) / σ<sub>Pfad</sub></code></p>
+<div class="calcbox small">
+Kritischer Pfad mit drei Vorgängen: AE = 8 + 12 + 10 = 30 Tage; σ = 1,0 / 1,5 / 2,0<br>
+σ<sub>Pfad</sub> = √(1,0² + 1,5² + 2,0²) = √(1 + 2,25 + 4) = √7,25 ≈ <b>2,69 Tage</b><br>
+Zieltermin 33 Tage: z = (33 − 30) / 2,69 ≈ 1,11 → Wahrscheinlichkeit rund <b>87 %</b><br>
+Zieltermin 30 Tage: z = 0 → <b>50 %</b> · Zieltermin 27 Tage: z ≈ −1,11 → rund <b>13 %</b>
+</div>
+<p>Die Kernaussage für die Praxis: Ein Termin, der exakt der erwarteten Dauer entspricht, wird nur mit 50 % Wahrscheinlichkeit gehalten. Wer Zusagen macht, braucht Puffer – und kann mit dieser Rechnung begründen, wie viel.</p>
+
+<h3>Ressourcen im Terminplan</h3>
+<ul class="tight">
+<li><b>Ressourcenglättung</b> – Vorgänge werden nur innerhalb ihrer Puffer verschoben. Der Endtermin bleibt unverändert, die Auslastung wird gleichmäßiger.</li>
+<li><b>Ressourcenbeschränkte Terminplanung</b> – die verfügbare Kapazität ist die harte Grenze; der Endtermin verschiebt sich, wenn nötig. Hier entsteht ein <b>ressourcenkritischer Pfad</b>, der vom rein logischen kritischen Pfad abweichen kann.</li>
+</ul>
+<div class="note exam"><b>Prüfungshinweis</b>
+Häufig gefragt: Unterschied zwischen Gesamt- und freiem Puffer, Auswirkung einer Verzögerung auf den Endtermin, günstigste Verkürzungsmaßnahme bei gegebener Kostensteigerungsrate. Immer prüfen, ob der zu verkürzende Vorgang überhaupt kritisch ist.</div>`},
+
+{t:'Vertiefung: Kalkulation und Wirtschaftlichkeit', sub:'Kostenrechnung, Maschinenstundensatz, Handelskalkulation, statische und dynamische Verfahren', tag:'Planung', html:`
+<h3>Kostenbegriffe ordnen</h3>
+<div class="tblwrap"><table>
+<tr><th>Unterscheidung</th><th>Bedeutung</th><th>IT-Beispiel</th></tr>
+<tr><td>Einzelkosten</td><td>direkt einem Projekt zurechenbar</td><td>Notebooks für dieses Projekt, Projektstunden</td></tr>
+<tr><td>Gemeinkosten</td><td>nur über Schlüssel zurechenbar</td><td>Miete, Verwaltung, Internetanschluss</td></tr>
+<tr><td>Fixe Kosten</td><td>unabhängig von der Menge</td><td>Serverwartung, Gehälter</td></tr>
+<tr><td>Variable Kosten</td><td>mengenabhängig</td><td>Lizenzen je Nutzer, Cloud-Speicher je GB</td></tr>
+</table></div>
+<p>Die Kostenrechnung beantwortet drei Fragen nacheinander: <b>Kostenartenrechnung</b> – welche Kosten sind angefallen? <b>Kostenstellenrechnung</b> – wo sind sie angefallen? (Werkzeug: Betriebsabrechnungsbogen) <b>Kostenträgerrechnung</b> – wofür sind sie angefallen? Erst die dritte Stufe ergibt die Projektkalkulation.</p>
+
+<h3>Kalkulationsverfahren im Überblick</h3>
+<div class="tblwrap"><table>
+<tr><th>Verfahren</th><th>Wann geeignet</th><th>Kern</th></tr>
+<tr><td>Divisionskalkulation</td><td>ein einheitliches Produkt</td><td>Gesamtkosten / Menge</td></tr>
+<tr><td>Äquivalenzziffernkalkulation</td><td>ähnliche Produkte mit Größenunterschied</td><td>Umrechnung über Verhältniszahlen</td></tr>
+<tr><td>Zuschlagskalkulation</td><td>Einzelfertigung, Projekte</td><td>Gemeinkosten prozentual auf Einzelkosten</td></tr>
+<tr><td>Maschinenstundensatzrechnung</td><td>maschinen- oder anlagenintensiv</td><td>Anlagenkosten je Betriebsstunde</td></tr>
+</table></div>
+
+<h3>Maschinenstundensatz – Beispiel Serverbetrieb</h3>
+<div class="calcbox small">
+Anschaffung Server 24.000 €, Nutzungsdauer 5 Jahre, kalkulatorischer Zinssatz 6 %<br>
+Kalkulatorische Abschreibung: 24.000 / 5 = 4.800 €/Jahr<br>
+Kalkulatorische Zinsen: (24.000 / 2) × 6 % = 720 €/Jahr<br>
+Energie: 1.100 €/Jahr · Wartung: 1.800 €/Jahr · anteilige Raumkosten: 600 €/Jahr<br>
+<b>Summe: 9.020 €/Jahr</b><br>
+Betriebsstunden: 300 Tage × 20 h = 6.000 h<br>
+<b>Maschinenstundensatz = 9.020 € / 6.000 h ≈ 1,50 €/h</b>
+</div>
+<p>Der Wert dient der verursachungsgerechten Verrechnung, etwa wenn ein Projekt Testkapazität auf einem gemeinsamen Server nutzt.</p>
+
+<h3>Handelskalkulation in drei Richtungen</h3>
+<ul class="tight">
+<li><b>Vorwärtskalkulation</b> – vom Einkaufspreis zum Verkaufspreis. Frage: Was muss ich verlangen?</li>
+<li><b>Rückwärtskalkulation</b> – vom marktüblichen Verkaufspreis zum maximal zulässigen Einkaufspreis. Frage: Was darf der Einkauf höchstens kosten?</li>
+<li><b>Differenzkalkulation</b> – Einkaufs- und Verkaufspreis sind gegeben, gesucht ist der verbleibende Gewinn.</li>
+</ul>
+<div class="calcbox small">
+<b>Rückwärtskalkulation:</b> Der Markt gibt 1.190 € brutto für ein Servicepaket her.<br>
+1.190 / 1,19 = 1.000 € Listenverkaufspreis netto<br>
+− 10 % Rabatt: 1.000 × 0,90 = 900 € Zielverkaufspreis<br>
+− 2 % Skonto: 900 × 0,98 = 882 € Barverkaufspreis<br>
+− 12 % Gewinn: 882 / 1,12 = 787,50 € Selbstkosten<br>
+Ergebnis: Die Selbstkosten dürfen 787,50 € nicht überschreiten.<br>
+<i>Achtung auf die Rechenrichtung:</i> Rabatt und Skonto werden abwärts <b>multipliziert</b> (× 0,90 / × 0,98), aufwärts dagegen <b>dividiert</b> (/ 0,90 / 0,98). Der Gewinnzuschlag wird abwärts dividiert, aufwärts multipliziert.
+</div>
+
+<h3>Skonto als Jahreszins</h3>
+<p><code>Jahreszins = (Skontosatz × 360) / (Zahlungsziel − Skontofrist)</code></p>
+<div class="calcbox small">
+Bedingung „2 % Skonto bei Zahlung binnen 10 Tagen, netto 30 Tage":<br>
+(2 × 360) / (30 − 10) = 720 / 20 = <b>36 % p. a.</b><br>
+Ein Kontokorrentkredit zu 9 % ist damit deutlich günstiger als der Verzicht auf Skonto. Skonto zu ziehen ist fast immer wirtschaftlich.
+</div>
+
+<h3>Deckungsbeitrag und Break-even</h3>
+<div class="calcbox small">
+Managed-Service-Paket: Preis 60 €/Arbeitsplatz/Monat, variable Kosten 25 €, Fixkosten 7.000 €/Monat<br>
+Deckungsbeitrag je Stück: 60 − 25 = <b>35 €</b><br>
+Break-even-Menge: 7.000 / 35 = <b>200 Arbeitsplätze</b><br>
+Break-even-Umsatz: 200 × 60 = <b>12.000 €</b><br>
+Bei aktuell 260 betreuten Plätzen: Sicherheitsstrecke = 260 − 200 = 60 Plätze<br>
+Sicherheitskoeffizient = 60 / 260 = <b>23 %</b> – so weit darf die Menge sinken, bevor Verlust entsteht.
+</div>
+
+<h3>Statische Investitionsrechnung</h3>
+<div class="tblwrap"><table>
+<tr><th>Verfahren</th><th>Kriterium</th><th>Formel</th></tr>
+<tr><td>Kostenvergleich</td><td>niedrigste Gesamtkosten pro Jahr</td><td>Abschreibung + kalk. Zinsen + Betriebskosten</td></tr>
+<tr><td>Gewinnvergleich</td><td>höchster Gewinn</td><td>Erlöse − Gesamtkosten</td></tr>
+<tr><td>Rentabilitätsvergleich</td><td>höchste Rendite</td><td>(Gewinn / Ø gebundenes Kapital) × 100</td></tr>
+<tr><td>Amortisationsrechnung</td><td>kürzeste Rückflussdauer</td><td>Investition / jährlicher Rückfluss</td></tr>
+</table></div>
+<p>Bei ungleichmäßigen Rückflüssen wird die <b>Kumulationsmethode</b> verwendet: die jährlichen Rückflüsse werden aufaddiert, bis die Investitionssumme erreicht ist.</p>
+<div class="calcbox small">
+Investition 50.000 €; Rückflüsse: Jahr 1 = 12.000 €, Jahr 2 = 18.000 €, Jahr 3 = 20.000 €, Jahr 4 = 22.000 €<br>
+Kumuliert: 12.000 · 30.000 · 50.000 → nach genau <b>3 Jahren</b> amortisiert.<br>
+Bei Jahr 3 = 15.000 € wären es 45.000 € nach drei Jahren; die Restsumme 5.000 € von 22.000 € entspricht 0,23 Jahren → <b>3,23 Jahre</b>.
+</div>
+
+<h3>Dynamische Verfahren: der Zeitwert des Geldes</h3>
+<p>Statische Verfahren ignorieren, dass ein Euro heute mehr wert ist als in fünf Jahren. Dynamische Verfahren zinsen die Zahlungen ab.</p>
+<p><code>Barwert = Zahlung / (1 + i)<sup>n</sup></code> · <code>Kapitalwert = Σ Barwerte − Investition</code></p>
+<div class="calcbox small">
+<b>Kapitalwert (NPV) bei i = 6 %</b><br>
+Investition: 40.000 € · Rückfluss 12.000 € über 4 Jahre · Restwert im Jahr 4: 5.000 €<br>
+Jahr 1: 12.000 / 1,06 = 11.320,75 €<br>
+Jahr 2: 12.000 / 1,06² = 10.679,96 €<br>
+Jahr 3: 12.000 / 1,06³ = 10.075,43 €<br>
+Jahr 4: (12.000 + 5.000) / 1,06⁴ = 17.000 / 1,26248 = 13.465,59 €<br>
+Summe der Barwerte: 45.541,74 €<br>
+<b>Kapitalwert = 45.541,74 − 40.000 = +5.541,74 €</b><br>
+Positiver Kapitalwert bedeutet: Die Investition verzinst sich höher als der Kalkulationszins von 6 % und ist vorteilhaft.
+</div>
+<ul class="tight">
+<li><b>Interner Zinsfuß</b> – der Zinssatz, bei dem der Kapitalwert genau null wird. Er zeigt die tatsächliche Verzinsung der Investition und wird meist durch Interpolation zwischen zwei Versuchszinssätzen genähert.</li>
+<li><b>Annuitätenmethode</b> – verteilt den Kapitalwert gleichmäßig auf die Nutzungsjahre. Nützlich beim Vergleich unterschiedlich langer Nutzungsdauern.</li>
+</ul>
+
+<h3>Leasing oder Kauf</h3>
+<div class="tblwrap"><table>
+<tr><th>Für Kauf</th><th>Für Leasing</th></tr>
+<tr><td>Eigentum, freie Verfügung, kein Vertragsende</td><td>Liquidität wird geschont, keine hohe Anfangsauszahlung</td></tr>
+<tr><td>Über die Laufzeit meist günstiger</td><td>Planbare, gleichbleibende Raten</td></tr>
+<tr><td>Abschreibung als Aufwand</td><td>Raten sofort voll als Betriebsausgabe</td></tr>
+<tr><td>Kein Rückgabezwang, Restwert bleibt</td><td>Regelmäßig aktuelle Technik, Rückgaberisiko beachten</td></tr>
+</table></div>
+<div class="note exam"><b>Prüfungshinweis</b>
+Sehr beliebte Aufgabentypen: Zuschlagskalkulation vorwärts, Rückwärtskalkulation ab Marktpreis, Skontojahreszins, Break-even, Amortisation mit ungleichen Rückflüssen und der Kapitalwert über vier Jahre. Rechenweg mit Formel, Einsetzen, Einheit und Antwortsatz – das bringt die Teilpunkte auch bei einem Zahlendreher.</div>`}
+);
+
+CH.push(
+{t:'Vertiefung: Scrum und Kanban', sub:'Commitments, INVEST, Velocity, Burndown, Little\u2019s Gesetz, Skalierung, agile Verträge', tag:'Modelle', html:`
+<h3>Die drei Commitments im aktuellen Scrum</h3>
+<p>Seit dem Scrum Guide 2020 hat jedes Artefakt eine verbindliche Zusage, an der sein Fortschritt gemessen wird. Diese Zuordnung wird gern abgefragt:</p>
+<div class="tblwrap"><table>
+<tr><th>Artefakt</th><th>Commitment</th><th>Bedeutung</th></tr>
+<tr><td>Product Backlog</td><td><b>Product Goal</b></td><td>langfristiges Ziel des Produkts, gibt allen Einträgen eine Richtung</td></tr>
+<tr><td>Sprint Backlog</td><td><b>Sprint Goal</b></td><td>das eine Ziel des Sprints; es bleibt stabil, der Weg dorthin darf sich ändern</td></tr>
+<tr><td>Increment</td><td><b>Definition of Done</b></td><td>Qualitätsmaßstab, ab wann etwas als fertig gilt</td></tr>
+</table></div>
+<p>Wichtig: Das <b>Sprint Goal</b> ist nicht die Liste der Backlog-Einträge. Es ist ein Satz, der beschreibt, welchen Wert der Sprint stiftet – zum Beispiel: „Anwender können sich mit zwei Faktoren anmelden und ihr Kennwort selbst zurücksetzen." Fällt ein Backlog-Eintrag weg, kann das Ziel trotzdem erreicht werden.</p>
+
+<h3>Backlog Refinement</h3>
+<p>Kein eigenes Event, sondern eine laufende Tätigkeit: Einträge werden geschärft, zerlegt, geschätzt und mit Akzeptanzkriterien versehen. Faustregel sind bis zu 10 % der Sprintkapazität. Ziel ist ein <b>ready</b>-Zustand: Die obersten Einträge sind klein genug, verstanden, geschätzt und ohne offene Abhängigkeit umsetzbar.</p>
+
+<h3>User Stories nach INVEST</h3>
+<div class="tblwrap"><table>
+<tr><td><b>I</b>ndependent</td><td>möglichst unabhängig von anderen Stories umsetzbar</td></tr>
+<tr><td><b>N</b>egotiable</td><td>beschreibt den Bedarf, nicht die fertige Lösung – Details werden verhandelt</td></tr>
+<tr><td><b>V</b>aluable</td><td>stiftet erkennbaren Nutzen für einen Anwender</td></tr>
+<tr><td><b>E</b>stimable</td><td>lässt sich schätzen; ist sie das nicht, fehlt Wissen</td></tr>
+<tr><td><b>S</b>mall</td><td>passt in einen Sprint, besser in wenige Tage</td></tr>
+<tr><td><b>T</b>estable</td><td>hat prüfbare Akzeptanzkriterien</td></tr>
+</table></div>
+<div class="calcbox small">
+<b>Beispiel einer vollständigen Story</b><br>
+<i>Als</i> Außendienstmitarbeiter <i>möchte ich</i> mein Kennwort selbst zurücksetzen können, <i>um</i> nicht auf den Support warten zu müssen.<br><br>
+<b>Akzeptanzkriterien im Gegeben-Wenn-Dann-Format:</b><br>
+1. Gegeben, ich bin mit zwei Faktoren angemeldet, wenn ich ein neues Kennwort vergebe, dann kann ich mich sofort damit anmelden.<br>
+2. Gegeben, ich bin nur mit einem Faktor angemeldet, wenn ich die Funktion aufrufe, dann werde ich zur Bestätigung des zweiten Faktors aufgefordert.<br>
+3. Gegeben, ich habe heute bereits dreimal zurückgesetzt, wenn ich es erneut versuche, dann wird der Vorgang mit Hinweis auf die Tagesgrenze abgelehnt.<br><br>
+Diese Kriterien sind gleichzeitig die Vorlage für die Testfälle – deshalb ist „testable" das wichtigste Kriterium in INVEST.
+</div>
+
+<h3>Schätzen und Velocity</h3>
+<ul class="tight">
+<li><b>Story Points</b> sind relativ, nicht absolut. Geschätzt wird gegen eine <b>Referenzstory</b> mittlerer Größe, üblicherweise in der Fibonacci-Reihe 1, 2, 3, 5, 8, 13, 21.</li>
+<li><b>Planning Poker</b>: alle schätzen gleichzeitig verdeckt, größte Abweichungen werden diskutiert, dann wird erneut geschätzt. Der Zweck ist das Gespräch über die Unterschiede, nicht die Zahl.</li>
+<li><b>Velocity</b> ist der Mittelwert abgeschlossener Story Points der letzten Sprints. Sie ist eine Prognosegröße für <i>ein Team</i> und darf niemals als Leistungskennzahl zwischen Teams verglichen werden.</li>
+</ul>
+<div class="calcbox small">
+<b>Prognose:</b> Restbacklog 240 Story Points, Velocity der letzten fünf Sprints: 28, 32, 26, 34, 30 → Mittelwert <b>30</b><br>
+Verbleibende Sprints: 240 / 30 = <b>8 Sprints</b> · bei zweiwöchigen Sprints rund <b>16 Wochen</b><br>
+Bandbreite über den schlechtesten und besten Wert: 240 / 26 ≈ 9,2 Sprints bis 240 / 34 ≈ 7,1 Sprints<br>
+Kommuniziert wird deshalb eine Spanne von 7 bis 10 Sprints, nicht die scheingenaue Zahl 8.
+</div>
+
+<h3>Burndown und Burnup</h3>
+<div class="tblwrap"><table>
+<tr><th></th><th>Burndown</th><th>Burnup</th></tr>
+<tr><td>Zeigt</td><td>verbleibende Arbeit, Linie fällt auf null</td><td>erledigte Arbeit und den Gesamtumfang als zweite Linie</td></tr>
+<tr><td>Stärke</td><td>einfach, gut für einen Sprint</td><td>macht Umfangsänderungen sichtbar</td></tr>
+<tr><td>Schwäche</td><td>neue Anforderungen sind nicht erkennbar – die Linie stagniert nur</td><td>etwas komplexer zu lesen</td></tr>
+</table></div>
+<p>Interpretation eines Sprint-Burndowns: verläuft die Linie längere Zeit waagerecht und fällt erst am Ende steil ab, wurden zu viele Aufgaben parallel begonnen. Genau dagegen helfen kleinere Einträge und ein WIP-Limit.</p>
+
+<h3>Kanban messen: Little\u2019s Gesetz</h3>
+<p><code>Durchlaufzeit = Work in Progress / Durchsatz</code></p>
+<div class="calcbox small">
+Ein Team hat im Mittel <b>12</b> Tickets gleichzeitig in Arbeit und schließt <b>4</b> Tickets pro Tag ab.<br>
+Durchlaufzeit = 12 / 4 = <b>3 Tage</b><br><br>
+Senkt das Team sein WIP-Limit auf 6 bei gleichem Durchsatz:<br>
+Durchlaufzeit = 6 / 4 = <b>1,5 Tage</b><br><br>
+Die Aussage ist kontraintuitiv, aber zentral: <b>Weniger gleichzeitig begonnene Arbeit verkürzt die Durchlaufzeit</b>, ohne dass jemand schneller arbeiten muss. Der Grund sind wegfallende Umschaltverluste und Wartezeiten.
+</div>
+<ul class="tight">
+<li><b>Durchlaufzeit (Lead Time)</b> – vom Eingang der Anforderung bis zur Auslieferung, aus Kundensicht.</li>
+<li><b>Zykluszeit (Cycle Time)</b> – ab dem tatsächlichen Bearbeitungsbeginn, aus Teamsicht.</li>
+<li><b>Durchsatz</b> – abgeschlossene Aufgaben je Zeiteinheit.</li>
+<li><b>Kumuliertes Flussdiagramm</b> – zeigt die Menge je Spalte im Zeitverlauf; wird ein Band immer breiter, liegt dort der Engpass.</li>
+</ul>
+<p>In Serviceumgebungen ergänzt man <b>Serviceklassen</b>: beschleunigt (Störung mit Produktionsstopp), Standard, Termin gebunden, unbestimmt. Für jede Klasse gelten eigene Regeln und WIP-Anteile.</p>
+
+<h3>Skalierung in Kürze</h3>
+<div class="tblwrap"><table>
+<tr><th>Rahmenwerk</th><th>Idee</th></tr>
+<tr><td><b>Scrum of Scrums</b></td><td>Vertreter mehrerer Teams stimmen sich regelmäßig ab; leichtgewichtigste Variante</td></tr>
+<tr><td><b>Nexus</b></td><td>3 bis 9 Scrum-Teams an einem Product Backlog, ergänzt um ein Integrationsteam</td></tr>
+<tr><td><b>LeSS</b></td><td>Scrum konsequent hochskaliert, ein Product Owner und ein Backlog für alle Teams</td></tr>
+<tr><td><b>SAFe</b></td><td>umfangreiches Rahmenwerk mit mehreren Ebenen; verbreitet in großen Konzernen, oft als schwergewichtig kritisiert</td></tr>
+</table></div>
+
+<h3>Agile Vorhaben vertraglich fassen</h3>
+<div class="tblwrap"><table>
+<tr><th>Modell</th><th>Kern</th><th>Risiko</th></tr>
+<tr><td>Festpreis auf Pflichtenheft</td><td>klassisch, Leistungsumfang fixiert</td><td>Auftragnehmer trägt das Aufwandsrisiko, Änderungen sind teuer</td></tr>
+<tr><td>Time and Material</td><td>Abrechnung nach Aufwand</td><td>Auftraggeber trägt das Kostenrisiko, braucht enge Steuerung</td></tr>
+<tr><td><b>Agiler Festpreis</b></td><td>fixes Budget und fixe Zeit, variabler Umfang; Priorisierung durch den Auftraggeber</td><td>geteiltes Risiko; verlangt Vertrauen und einen aktiven Product Owner</td></tr>
+</table></div>
+<p>Der Konflikt ist real: Ein Werkvertrag schuldet einen Erfolg, agiles Vorgehen lässt den Umfang bewusst offen. Übliche Lösung ist ein Rahmenvertrag, unter dem einzelne Sprints oder Releases als abnahmefähige Einheiten beauftragt werden.</p>
+
+<h3>Typische Anti-Pattern</h3>
+<ul class="tight">
+<li>Product Owner ohne Entscheidungsbefugnis – jede Priorisierung muss erst freigegeben werden</li>
+<li>Daily Scrum als Statusbericht an den Vorgesetzten statt als Abstimmung im Team</li>
+<li>Retrospektive ohne verbindliche Maßnahme mit Verantwortlichem und Termin</li>
+<li>Velocity als Leistungsvorgabe – das Team bläht die Schätzungen auf, die Zahl wird wertlos</li>
+<li>Sprints, die verlängert werden, weil „noch etwas fehlt" – die Timebox ist unveränderlich</li>
+<li>Definition of Done, die Tests und Dokumentation ausklammert – das Increment ist dann nicht auslieferbar</li>
+</ul>
+<div class="note exam"><b>Prüfungshinweis</b>
+Sicher können solltest du: Rollen mit Verantwortlichkeiten, Artefakte mit ihren Commitments, alle Events mit Timebox, den Unterschied zwischen Scrum und Kanban sowie eine Velocity-Prognose als Rechenaufgabe. Häufig wird auch verlangt zu begründen, warum ein bestimmtes Vorhaben besser klassisch oder besser agil bearbeitet wird.</div>`},
+
+{t:'Vertiefung: IT-Sicherheit und Datenschutz', sub:'BSI-Standards, ISMS, Berechtigungen, Kryptografie, DSFA, Löschkonzept, BCM', tag:'Recht', html:`
+<h3>Die BSI-Standards und ihr Zusammenspiel</h3>
+<div class="tblwrap"><table>
+<tr><th>Standard</th><th>Inhalt</th></tr>
+<tr><td><b>200-1</b></td><td>Anforderungen an ein Managementsystem für Informationssicherheit (ISMS)</td></tr>
+<tr><td><b>200-2</b></td><td>IT-Grundschutz-Methodik mit den Vorgehensweisen Basis-, Standard- und Kern-Absicherung</td></tr>
+<tr><td><b>200-3</b></td><td>Risikoanalyse für Objekte mit hohem oder sehr hohem Schutzbedarf</td></tr>
+<tr><td><b>200-4</b></td><td>Business Continuity Management, also Notfall- und Krisenvorsorge</td></tr>
+</table></div>
+<p>Ergänzt werden sie durch das <b>IT-Grundschutz-Kompendium</b> mit Bausteinen (z. B. NET.1.1 Netzarchitektur, SYS.1.1 Allgemeiner Server, APP.5.2 Exchange), die konkrete Anforderungen und elementare Gefährdungen enthalten.</p>
+
+<h3>Der Ablauf nach IT-Grundschutz</h3>
+<ol class="tight">
+<li><b>Strukturanalyse</b> – Erfassung von Geschäftsprozessen, Anwendungen, IT-Systemen, Netzen, Räumen. Ergebnis ist der Informationsverbund.</li>
+<li><b>Schutzbedarfsfeststellung</b> – je Objekt und Schutzziel in normal, hoch, sehr hoch, unter Anwendung von Maximumprinzip, Kumulations- und Verteilungseffekt.</li>
+<li><b>Modellierung</b> – passende Bausteine des Kompendiums den Objekten zuordnen.</li>
+<li><b>IT-Grundschutz-Check</b> – Soll-Ist-Vergleich je Anforderung: umgesetzt, teilweise, entbehrlich, nicht umgesetzt.</li>
+<li><b>Risikoanalyse nach 200-3</b> – für alle Objekte mit hohem oder sehr hohem Schutzbedarf.</li>
+<li><b>Realisierung</b> – Maßnahmen priorisieren, Verantwortliche und Termine festlegen, umsetzen und prüfen.</li>
+</ol>
+
+<h3>Schutzbedarfskategorien konkret</h3>
+<div class="tblwrap"><table>
+<tr><th>Kategorie</th><th>Schadensauswirkung</th><th>Beispiel</th></tr>
+<tr><td><b>normal</b></td><td>begrenzt und überschaubar</td><td>Ausfall des Intranets für einen Tag</td></tr>
+<tr><td><b>hoch</b></td><td>beträchtlich</td><td>Offenlegung von Personaldaten, Stillstand der Auftragsabwicklung</td></tr>
+<tr><td><b>sehr hoch</b></td><td>existenziell bedrohlich</td><td>Verlust aller Kundendaten, dauerhafter Produktionsstillstand</td></tr>
+</table></div>
+<p>Bewertet wird über Schadensszenarien: Verstoß gegen Gesetze, Beeinträchtigung des Rechts auf informationelle Selbstbestimmung, Gefahr für Leib und Leben, Beeinträchtigung der Aufgabenerfüllung, negative Außenwirkung, finanzielle Auswirkungen.</p>
+
+<h3>ISMS und kontinuierliche Verbesserung</h3>
+<p>Ein ISMS ist kein Dokument, sondern ein laufender Regelkreis nach <b>PDCA</b>: Sicherheitsleitlinie und Ziele festlegen (Plan), Maßnahmen umsetzen und schulen (Do), über Kennzahlen, Audits und Vorfälle überprüfen (Check), nachsteuern (Act). Eine Zertifizierung nach ISO 27001 ist entweder nativ oder auf Basis von IT-Grundschutz möglich.</p>
+
+<h3>Berechtigungskonzept in der Praxis</h3>
+<ul class="tight">
+<li><b>RBAC</b> – Rechte hängen an Rollen, Personen werden Rollen zugeordnet. Einzelrechte an Personen sind der Anfang jeder unpflegbaren Berechtigungsstruktur.</li>
+<li><b>Funktionstrennung</b> – wer bestellt, darf nicht freigeben; wer administriert, prüft nicht die eigenen Protokolle.</li>
+<li><b>Privilegierte Konten</b> – getrennte Administrationskonten, kein Domänenadministrator für Alltagsarbeit, idealerweise ein Tier-Modell oder ein Passwortsafe mit Ausleihfunktion.</li>
+<li><b>Rezertifizierung</b> – mindestens jährlich bestätigen die Fachverantwortlichen, dass die vergebenen Rechte noch nötig sind.</li>
+<li><b>Joiner-Mover-Leaver</b> – der wichtigste Prozess: Beim Abteilungswechsel müssen alte Rechte entzogen werden, sonst sammeln Mitarbeitende über Jahre Rechte an.</li>
+</ul>
+<div class="calcbox small">
+<b>Beispiel Rollenmatrix Dateiablage</b><br>
+Rolle „Buchhaltung lesend" → Freigabe /Finanzen: Lesen<br>
+Rolle „Buchhaltung schreibend" → Freigabe /Finanzen: Ändern<br>
+Rolle „Personal" → Freigabe /HR: Ändern; /Finanzen: kein Zugriff<br>
+Rolle „IT-Administration" → keine fachlichen Leseberechtigungen, nur Verwaltung der Freigabe; Zugriff auf Inhalte nur über protokollierten Notfallzugang.
+</div>
+
+<h3>Kryptografie im Projektkontext</h3>
+<div class="tblwrap"><table>
+<tr><th>Verfahren</th><th>Merkmal</th><th>Einsatz</th></tr>
+<tr><td>Symmetrisch</td><td>ein gemeinsamer Schlüssel, schnell</td><td>Festplatten- und Dateiverschlüsselung, Backup</td></tr>
+<tr><td>Asymmetrisch</td><td>Schlüsselpaar aus öffentlich und privat, langsamer</td><td>Schlüsselaustausch, Signaturen, Zertifikate</td></tr>
+<tr><td>Hybrid</td><td>asymmetrischer Austausch eines symmetrischen Sitzungsschlüssels</td><td>TLS – der Regelfall im Netz</td></tr>
+<tr><td>Hashverfahren</td><td>Einwegfunktion, keine Verschlüsselung</td><td>Integritätsprüfung, Kennwortspeicherung mit Salt</td></tr>
+</table></div>
+<p>Im Projekt zu klären: Wer stellt Zertifikate aus (interne PKI oder öffentliche CA)? Wie lange sind sie gültig und wer erneuert sie rechtzeitig? Wo werden Schlüssel gesichert? Ein verlorener Wiederherstellungsschlüssel für die Festplattenverschlüsselung macht die Daten unbrauchbar – die Schlüsselsicherung gehört ins Betriebshandbuch.</p>
+
+<h3>Protokollierung und Mitbestimmung</h3>
+<p>Protokolle sind für Nachvollziehbarkeit und Vorfallanalyse unverzichtbar, ermöglichen aber zugleich eine Verhaltens- und Leistungskontrolle. Deshalb gilt: Zweck vorab festlegen, nur erforderliche Daten erfassen, Aufbewahrungsdauer begrenzen, Zugriff auf die Protokolle beschränken und die Auswertung in einer Betriebsvereinbarung nach § 87 Abs. 1 Nr. 6 BetrVG regeln. Personenbezogene Auswertungen erfolgen nur anlassbezogen und im Vier-Augen-Prinzip.</p>
+
+<h3>Datenschutz-Folgenabschätzung – Ablauf</h3>
+<ol class="tight">
+<li>Prüfen, ob eine DSFA nötig ist: voraussichtlich hohes Risiko, umfangreiche Überwachung, besondere Datenkategorien, neue Technologien.</li>
+<li>Verarbeitung systematisch beschreiben: Zwecke, Datenarten, Betroffene, Empfänger, Speicherdauer, Rechtsgrundlage nach Art. 6 DSGVO.</li>
+<li>Notwendigkeit und Verhältnismäßigkeit bewerten – gibt es ein milderes Mittel?</li>
+<li>Risiken für die Rechte der Betroffenen bewerten.</li>
+<li>Abhilfemaßnahmen festlegen (Verschlüsselung, Pseudonymisierung, Rollenkonzept, Löschfristen).</li>
+<li>Ergebnis dokumentieren, Datenschutzbeauftragten einbeziehen, regelmäßig überprüfen.</li>
+</ol>
+
+<h3>Löschkonzept</h3>
+<p>Die DIN 66398 liefert das Vorgehen: Datenarten bilden, je Datenart eine <b>Löschregel</b> aus Löschfrist und Startzeitpunkt festlegen, Regeln zu <b>Löschklassen</b> zusammenfassen, Verantwortlichkeiten und Umsetzung dokumentieren.</p>
+<div class="calcbox small">
+<b>Beispiele für Löschregeln</b><br>
+Bewerbungsunterlagen abgelehnter Bewerber: 6 Monate ab Absage (Frist des AGG plus Puffer)<br>
+Protokolldaten Firewall: 30 Tage ab Erstellung, sofern kein Sicherheitsvorfall<br>
+Rechnungen und Buchungsbelege: 10 Jahre ab Ende des Kalenderjahres (Handels- und Steuerrecht)<br>
+Personalakte: 3 Jahre nach Ende des Arbeitsverhältnisses, einzelne Bestandteile abweichend<br><br>
+Der Konflikt zwischen Aufbewahrungspflicht und Löschpflicht wird über die Löschregel entschieden, nicht im Einzelfall durch den Administrator.
+</div>
+
+<h3>Meldung von Datenschutzverletzungen</h3>
+<p>Ablauf: Vorfall erkennen und intern melden → Datenschutzbeauftragten sofort einbeziehen → Sachverhalt und Betroffenenkreis feststellen → Risiko bewerten → bei Risiko innerhalb von <b>72 Stunden</b> an die Aufsichtsbehörde melden → bei hohem Risiko zusätzlich die betroffenen Personen benachrichtigen → alles dokumentieren, auch wenn nicht gemeldet wird.</p>
+
+<h3>Notfallmanagement</h3>
+<ul class="tight">
+<li><b>Business Impact Analyse</b> – welche Prozesse sind wie schnell kritisch? Daraus ergeben sich RTO, RPO und die maximal tolerierbare Ausfallzeit.</li>
+<li><b>Notfallhandbuch</b> – Meldewege, Rollen, Wiederanlaufreihenfolge, Ansprechpartner; offline und außerhalb der betroffenen Systeme verfügbar.</li>
+<li><b>Übungen</b> – mindestens jährlich, mit protokollierter Auswertung. Eine nie geübte Notfallplanung versagt im Ernstfall.</li>
+<li><b>Awareness</b> – Schulungen und Phishing-Simulationen, letztere nur in Abstimmung mit Betriebsrat und Datenschutz und ohne personenbezogene Auswertung.</li>
+</ul>
+<div class="note exam"><b>Prüfungshinweis</b>
+Sicher sitzen sollten: die drei Schutzziele mit Beispielmaßnahmen, Schutzbedarfsfeststellung mit den drei Prinzipien, Least Privilege und Funktionstrennung, die 72-Stunden-Meldefrist, der Unterschied zwischen Verantwortlichem und Auftragsverarbeiter sowie RTO und RPO. Maßnahmen immer mit dem Schutzziel begründen, das sie adressieren.</div>`}
+);
+
 /* ===================== QUIZ ===================== */
 const Q = [
 {c:'Grundlagen',q:'Welches Merkmal gehört <b>nicht</b> zur Projektdefinition nach DIN 69901?',o:['Einmaligkeit der Bedingungen','Zeitliche Begrenzung','Regelmäßige Wiederholung des Ablaufs','Projektspezifische Organisation'],a:2,e:'Regelmäßige Wiederholung kennzeichnet einen Prozess, nicht ein Projekt. Projekte sind einmalig.'},
@@ -2644,9 +3052,304 @@ GL.push(
 ['Wiederanlaufplan','Dokumentierte Reihenfolge und Zuständigkeit für den Wiederanlauf nach einem Ausfall.']
 );
 
+/* ---- Erweiterung 4: Ablaufplanung ---- */
+Q.push(
+{c:'Planung',q:'Was ist die Grundlage für die Erstellung eines Ablaufplans?',o:['Das Angebot des Lieferanten','Der Projektstrukturplan mit seinen Arbeitspaketen','Das Abnahmeprotokoll','Der Statusbericht'],a:1,e:'Jedes Arbeitspaket der untersten PSP-Ebene wird zu einem Vorgang. Ohne PSP fehlen im Terminplan zuverlässig Aufgaben.'},
+{c:'Planung',q:'In welcher Reihenfolge wird ein Ablaufplan erstellt?',o:['Vorwärtsrechnung, Dauern, Vorgänger, Puffer','Vorgänge und Dauern, Anordnungsbeziehungen, Vorwärtsrechnung, Rückwärtsrechnung, Puffer, Kalendertermine','Kalendertermine, Puffer, Vorgänge','Puffer, kritischer Pfad, Dauern, Vorgänge'],a:1,e:'Erst die Struktur, dann die Rechnung, zuletzt die Übersetzung in echte Kalenderdaten mit Wochenenden und Feiertagen.'},
+{c:'Planung',q:'Zwei Aufgaben werden nacheinander geplant, weil derselbe Kollege beide erledigt. Wohin gehört diese Abhängigkeit?',o:['In den Ablaufplan als Normalfolge','In die Ressourcenplanung, nicht in den Ablaufplan','In das Risikoregister','In das Pflichtenheft'],a:1,e:'Der Ablaufplan bildet fachlich zwingende Abhängigkeiten ab. Ressourcenkonflikte werden im Kapazitätsabgleich gelöst.'},
+{c:'Planung',q:'Wann werden Wochenenden, Feiertage und Urlaub in die Terminplanung eingerechnet?',o:['Vor der Vorwärtsrechnung','Erst bei der Übersetzung der Arbeitstage in Kalendertermine','Gar nicht','Nur bei agilen Projekten'],a:1,e:'Netzplan und Puffer werden in Arbeitstagen gerechnet; erst danach entstehen daraus echte Kalenderdaten.'},
+{c:'Ablauf',q:'Welche Phase schließt mit dem Meilenstein „Pflichtenheft freigegeben" ab?',o:['Initiierung','Definition','Anforderungen','Planung'],a:2,e:'In der Anforderungsphase entstehen Ist-Analyse, Lastenheft und das vom Auftraggeber abgenommene Pflichtenheft.'},
+{c:'Ablauf',q:'Was bedeutet das Einfrieren der Baseline am Ende der Planungsphase?',o:['Das Projekt wird pausiert','Der freigegebene Planstand wird zum Vergleichsmaßstab für das Controlling','Die Kosten werden festgeschrieben und dürfen nie steigen','Die Risiken werden geschlossen'],a:1,e:'Gegen die Baseline werden Abweichungen gemessen. Änderungen daran laufen ausschließlich über das Änderungsverfahren.'},
+{c:'Ablauf',q:'Warum sollte für den Pilot kein besonders technikaffines Team ausgewählt werden?',o:['Aus Kostengründen','Weil ein realistischer Querschnitt die tatsächlichen Probleme sichtbar macht','Weil erfahrene Nutzer keine Zeit haben','Weil der Betriebsrat es verbietet'],a:1,e:'Ein Pilot mit den fittesten Anwendern liefert zu gute Ergebnisse und verschiebt die Probleme in den Serienrollout.'},
+{c:'Ablauf',q:'Welche Ergebnisse gehören ans Ende der Abschlussphase?',o:['Lastenheft und Pflichtenheft','Nachkalkulation, Lessons Learned, Abschlussbericht und Projektarchiv','Netzplan und Balkenplan','Angebotsvergleich'],a:1,e:'Erst mit Nachkalkulation, ausgewerteten Erfahrungen und formaler Entlastung ist ein Projekt abgeschlossen.'},
+{c:'Ablauf',q:'Welcher Anteil der Projektlaufzeit entfällt erfahrungsgemäß auf Initiierung, Definition, Anforderungen und Planung zusammen?',o:['unter 10 Prozent','rund ein Drittel','rund 70 Prozent','über 90 Prozent'],a:1,e:'Etwa 35 bis 40 Prozent. Wer hier kürzt, zahlt in der Realisierung ein Vielfaches durch Nacharbeit.'},
+{c:'Ablauf',q:'Was gehört zur formalen Übergabe an den Betrieb?',o:['Nur die Zugangsdaten','Betriebsdokumentation, aktives Monitoring, laufender Wartungsvertrag, aktualisierte CMDB und benannte Zuständigkeiten','Die Nachkalkulation','Der Projektantrag'],a:1,e:'Die Übergabe ist ein eigener Meilenstein mit Checkliste – nicht das kommentarlose Weiterreichen eines Systems.'},
+{c:'Steuerung',q:'Was passiert am Ende der Realisierungsphase mit einem eingetretenen Risiko?',o:['Es bleibt im Risikoregister','Es wird als Problem in die Projektsteuerung überführt','Es wird gelöscht','Es wird zum Change Request'],a:1,e:'Ein eingetretenes Risiko ist kein Risiko mehr, sondern ein Problem und wird über Maßnahmen der Steuerung behandelt.'},
+{c:'Prüfung',q:'Welche Phase des Ablaufplans entspricht beim betrieblichen Auftrag der AP2 dem Projektantrag?',o:['Initiierung','Planung','Realisierung','Abschluss'],a:0,e:'Der Antrag beschreibt Ausgangslage, Ziel, groben Aufwand und Zeitplanung – genau die Inhalte der Initiierungsphase.'}
+);
+
+K.push(
+{c:'Planung',f:'Ablaufplan erstellen – sieben Schritte',b:'1. Arbeitspakete aus dem PSP zu Vorgängen machen · 2. Dauern aus dem Aufwand ableiten · 3. Anordnungsbeziehungen festlegen · 4. Vorwärtsrechnung (Maximum) · 5. Rückwärtsrechnung (Minimum) · 6. Puffer und kritischer Pfad · 7. in Kalendertermine übersetzen und als Balkenplan darstellen.'},
+{c:'Planung',f:'Fachliche vs. Ressourcenabhängigkeit',b:'Fachlich zwingend („Image muss vor dem Pilot stehen") gehört in den Ablaufplan. „Beides macht derselbe Kollege" ist eine Ressourcenabhängigkeit und gehört in den Kapazitätsabgleich.'},
+{c:'Ablauf',f:'Die acht Projektphasen',b:'Initiierung · Definition · Anforderungen · Planung · Beschaffung · Realisierung · Test und Abnahme · Übergabe und Abschluss.'},
+{c:'Ablauf',f:'Meilensteine im Projektverlauf',b:'M0 Antrag genehmigt · M1 Auftrag unterschrieben · M2 Pflichtenheft freigegeben · M3 Plan freigegeben, Baseline gesetzt · M4 Material verfügbar · M5 Pilot erfolgreich · M6 Rollout fertig · M7 Abnahme · M8 Betriebsübergabe · M9 Projekt abgeschlossen.'},
+{c:'Ablauf',f:'Zeitanteile der Phasen',b:'Initiierung 5 % · Definition 8 % · Anforderungen 10 % · Planung 15 % · Beschaffung 8 % · Realisierung 35 % · Test und Abnahme 10 % · Abschluss 9 %. Vorbereitung bindet rund 38 % – Kürzungen dort rächen sich in der Realisierung.'},
+{c:'Ablauf',f:'Baseline',b:'Der am Ende der Planungsphase freigegebene und eingefrorene Planstand. Er ist der Vergleichsmaßstab für alle Soll-Ist-Vergleiche; Änderungen nur über das Änderungsverfahren.'}
+);
+
+/* ---- Vertiefungen: Fragen, Karten, Formeln ---- */
+Q.push(
+{c:'Planung',q:'Wozu dienen Scheinvorgänge?',o:['Zur Darstellung von Pufferzeiten','Zur Darstellung reiner Abhängigkeiten im Vorgangspfeilnetz, ohne Zeit zu verbrauchen','Zur Kennzeichnung des kritischen Pfads','Zur Ressourcenglättung'],a:1,e:'Scheinvorgänge haben Dauer 0 und werden nur im Vorgangspfeilnetz (CPM) benötigt. Im Vorgangsknotennetz sind sie überflüssig.'},
+{c:'Planung',q:'Was beschreibt ein Minimalabstand zwischen zwei Vorgängen?',o:['Die kürzeste mögliche Vorgangsdauer','Eine erzwungene Wartezeit zwischen Vorgänger und Nachfolger','Den kleinsten Gesamtpuffer','Die minimale Teamgröße'],a:1,e:'Beispiel Lieferzeit: Die Installation darf frühestens 10 Tage nach der Bestellung beginnen – FAZ des Nachfolgers ≥ FEZ des Vorgängers plus 10.'},
+{c:'Planung',q:'Welche Beziehung gilt immer zwischen den Pufferarten?',o:['GP ≤ FP ≤ UP','UP ≤ FP ≤ GP','FP ≤ GP ≤ UP','Alle drei sind stets gleich'],a:1,e:'Der unabhängige Puffer ist der strengste, der Gesamtpuffer der großzügigste Wert. Eine andere Reihenfolge bedeutet einen Rechenfehler.'},
+{c:'Planung',q:'Was sagt ein unabhängiger Puffer von 0 aus?',o:['Der Vorgang ist kritisch','Enden alle Vorgänger spätestmöglich, bleibt dem Vorgang keine eigene Reserve','Der Vorgang hat keinen Nachfolger','Der Vorgang kann entfallen'],a:1,e:'Der unabhängige Puffer ist der einzige Puffer, den ein Vorgang wirklich allein besitzt. Er kann 0 sein, obwohl Gesamtpuffer vorhanden ist.'},
+{c:'Planung',q:'Wie berechnet sich die Kostensteigerungsrate beim Crashing?',o:['(Crashkosten − Normalkosten) / (Normaldauer − Crashdauer)','Crashkosten / Normaldauer','(Normalkosten − Crashkosten) × Dauer','Gesamtkosten / kritischer Pfad'],a:0,e:'Sie gibt die Mehrkosten je eingesparten Tag an. Verkürzt wird immer der günstigste Vorgang, der auf dem kritischen Pfad liegt.'},
+{c:'Planung',q:'Ein unkritischer Vorgang lässt sich für 400 € pro Tag verkürzen, ein kritischer für 900 €. Was ist richtig?',o:['Den unkritischen verkürzen, er ist günstiger','Den kritischen verkürzen, nur er verkürzt die Projektdauer','Beide gleichzeitig verkürzen','Keinen von beiden'],a:1,e:'Eine Verkürzung außerhalb des kritischen Pfads erzeugt nur Kosten und spart keinen einzigen Tag.'},
+{c:'Planung',q:'Was ist nach jeder Verkürzungsmaßnahme zu prüfen?',o:['Ob das Budget noch reicht','Ob ein anderer Weg inzwischen kritisch geworden ist','Ob die Anforderungen noch gelten','Ob der Auftraggeber zustimmt'],a:1,e:'Sobald ein paralleler Weg ebenfalls Gesamtpuffer 0 erreicht, muss auf allen kritischen Pfaden gleichzeitig verkürzt werden.'},
+{c:'Planung',q:'Wie hoch ist die Wahrscheinlichkeit, einen Termin zu halten, der exakt der erwarteten Projektdauer entspricht?',o:['rund 25 %','rund 50 %','rund 68 %','rund 95 %'],a:1,e:'Bei z = 0 liegt die Wahrscheinlichkeit bei 50 %. Verbindliche Zusagen brauchen deshalb einen Puffer.'},
+{c:'Planung',q:'Wie wird die Standardabweichung eines Pfades aus den Einzelabweichungen berechnet?',o:['Als Summe der Einzelwerte','Als Wurzel aus der Summe der Quadrate','Als Mittelwert der Einzelwerte','Als Produkt der Einzelwerte'],a:1,e:'σ des Pfades = Wurzel aus (σ₁² + σ₂² + …). Die Abweichungen addieren sich nicht linear.'},
+{c:'Planung',q:'Was unterscheidet Ressourcenglättung von ressourcenbeschränkter Terminplanung?',o:['Es gibt keinen Unterschied','Glättung verschiebt nur innerhalb der Puffer und hält den Endtermin, die beschränkte Planung akzeptiert eine Terminverschiebung','Glättung erhöht immer die Kosten','Beschränkte Planung ignoriert Kapazitäten'],a:1,e:'Bei ressourcenbeschränkter Planung kann ein ressourcenkritischer Pfad entstehen, der vom logischen kritischen Pfad abweicht.'},
+
+{c:'Planung',q:'Wie berechnet sich der Maschinenstundensatz?',o:['Anschaffungswert / Nutzungsdauer','Jährliche Anlagenkosten / jährliche Betriebsstunden','Betriebsstunden × Stundenlohn','Gesamtkosten / Anzahl Mitarbeiter'],a:1,e:'Kalkulatorische Abschreibung, kalkulatorische Zinsen, Energie, Wartung und Raumkosten werden addiert und durch die Betriebsstunden geteilt.'},
+{c:'Planung',q:'Wie hoch sind die kalkulatorischen Zinsen bei 24.000 € Anschaffungswert und 6 % Zinssatz?',o:['360 €','720 €','1.440 €','2.400 €'],a:1,e:'Gerechnet wird auf das durchschnittlich gebundene Kapital: (24.000 / 2) × 0,06 = 720 €.'},
+{c:'Planung',q:'Der Markt gibt 1.000 € netto her, es werden 10 % Rabatt gewährt. Wie hoch ist der Zielverkaufspreis?',o:['900 €','909,09 €','1.100 €','1.111,11 €'],a:0,e:'Bei der Rückwärtskalkulation wird abwärts multipliziert: 1.000 × 0,90 = 900 €. Aufwärts würde durch 0,90 geteilt.'},
+{c:'Planung',q:'Zahlungsbedingung „2 % Skonto binnen 10 Tagen, netto 30 Tage". Wie hoch ist der Jahreszins des Lieferantenkredits?',o:['12 %','24 %','36 %','48 %'],a:2,e:'(2 × 360) / (30 − 10) = 36 % p. a. Deshalb lohnt sich Skonto fast immer, notfalls über einen Kontokorrentkredit.'},
+{c:'Planung',q:'Fixkosten 7.000 €, Preis 60 €, variable Kosten 25 €. Wo liegt der Break-even?',o:['117 Einheiten','200 Einheiten','280 Einheiten','350 Einheiten'],a:1,e:'Deckungsbeitrag 35 €, 7.000 / 35 = 200 Einheiten. Break-even-Umsatz: 200 × 60 = 12.000 €.'},
+{c:'Planung',q:'Was gibt der Sicherheitskoeffizient an?',o:['Den Risikozuschlag im Angebot','Um wie viel Prozent die Menge sinken darf, bevor Verlust entsteht','Die Höhe der Fixkosten','Die Amortisationszeit'],a:1,e:'Sicherheitsstrecke geteilt durch die Istmenge – bei 260 Einheiten und Break-even 200 also 60/260 ≈ 23 %.'},
+{c:'Planung',q:'Was unterscheidet dynamische von statischen Investitionsrechenverfahren?',o:['Dynamische berücksichtigen den Zeitwert des Geldes durch Abzinsung','Dynamische sind einfacher','Statische berücksichtigen Zinsen, dynamische nicht','Es gibt keinen Unterschied'],a:0,e:'Kapitalwert, interner Zinsfuß und Annuität zinsen künftige Zahlungen auf den heutigen Wert ab.'},
+{c:'Planung',q:'Was bedeutet ein positiver Kapitalwert?',o:['Die Investition ist gerade kostendeckend','Die Investition verzinst sich höher als der Kalkulationszins und ist vorteilhaft','Die Investition amortisiert sich nie','Der interne Zinsfuß ist negativ'],a:1,e:'Der Kapitalwert ist die Summe der abgezinsten Rückflüsse abzüglich der Investition. Über null bedeutet vorteilhaft.'},
+{c:'Planung',q:'Was ist der interne Zinsfuß?',o:['Der Zinssatz der Hausbank','Der Zinssatz, bei dem der Kapitalwert genau null ist','Die Umlaufrendite','Der Zinssatz für die Abzinsung'],a:1,e:'Er zeigt die tatsächliche Verzinsung der Investition und wird meist durch Interpolation zwischen zwei Versuchszinssätzen genähert.'},
+{c:'Planung',q:'Investition 50.000 €, Rückflüsse 12.000 €, 18.000 €, 20.000 €. Wann ist sie nach der Kumulationsmethode amortisiert?',o:['nach 2 Jahren','nach 3 Jahren','nach 4 Jahren','gar nicht'],a:1,e:'Kumuliert 12.000, 30.000, 50.000 € – die Investitionssumme ist am Ende des dritten Jahres genau erreicht.'},
+
+{c:'Modelle',q:'Welches Commitment gehört zum Sprint Backlog?',o:['Product Goal','Sprint Goal','Definition of Done','Velocity'],a:1,e:'Product Backlog → Product Goal, Sprint Backlog → Sprint Goal, Increment → Definition of Done.'},
+{c:'Modelle',q:'Was ist das Sprint Goal?',o:['Die Liste der ausgewählten Backlog-Einträge','Ein Satz, der den Wert des Sprints beschreibt und stabil bleibt','Die Summe der Story Points','Die Definition of Done'],a:1,e:'Der Weg zum Ziel darf sich im Sprint ändern, das Ziel selbst nicht. Deshalb ist es kein Aufgabenverzeichnis.'},
+{c:'Modelle',q:'Wofür steht das „I" in INVEST?',o:['Important','Independent','Integrated','Iterative'],a:1,e:'Independent, Negotiable, Valuable, Estimable, Small, Testable.'},
+{c:'Modelle',q:'In welchem Format werden Akzeptanzkriterien häufig formuliert?',o:['Muss / Soll / Kann','Gegeben – Wenn – Dann','Plan – Do – Check – Act','Wer – Was – Wann'],a:1,e:'Das Gegeben-Wenn-Dann-Format ist unmittelbar in Testfälle übersetzbar und macht Kriterien prüfbar.'},
+{c:'Modelle',q:'Restbacklog 240 Story Points, mittlere Velocity 30. Wie viele Sprints sind zu erwarten?',o:['6','8','10','12'],a:1,e:'240 / 30 = 8 Sprints. Sinnvoll kommuniziert wird eine Spanne aus bester und schlechtester Velocity.'},
+{c:'Modelle',q:'Warum darf Velocity nicht zwischen Teams verglichen werden?',o:['Weil sie geheim ist','Weil Story Points relativ zu einer teameigenen Referenz geschätzt werden','Weil sie sich täglich ändert','Weil sie nur im Burndown sichtbar ist'],a:1,e:'Story Points haben keine absolute Bedeutung. Als Leistungskennzahl eingesetzt, führt Velocity nur zu aufgeblähten Schätzungen.'},
+{c:'Modelle',q:'Was zeigt ein Burnup-Chart, das ein Burndown nicht zeigt?',o:['Die Restarbeit','Änderungen des Gesamtumfangs','Die Teamgröße','Die Sprintdauer'],a:1,e:'Das Burnup führt eine zweite Linie für den Gesamtumfang – neu hinzugekommene Anforderungen werden dadurch sichtbar.'},
+{c:'Modelle',q:'Wie lautet Little\u2019s Gesetz?',o:['Durchlaufzeit = WIP / Durchsatz','Durchsatz = WIP × Durchlaufzeit','WIP = Durchsatz / Durchlaufzeit','Durchlaufzeit = Durchsatz × WIP'],a:0,e:'Bei gleichem Durchsatz senkt weniger paralleler Work in Progress unmittelbar die Durchlaufzeit.'},
+{c:'Modelle',q:'Ein Team hat 12 Tickets parallel in Arbeit und schließt 4 pro Tag ab. Wie hoch ist die Durchlaufzeit?',o:['1,5 Tage','3 Tage','4 Tage','12 Tage'],a:1,e:'12 / 4 = 3 Tage. Bei einem WIP-Limit von 6 wären es nur noch 1,5 Tage – ohne dass jemand schneller arbeitet.'},
+{c:'Modelle',q:'Was unterscheidet Durchlaufzeit von Zykluszeit?',o:['Nichts','Durchlaufzeit ab Eingang der Anforderung, Zykluszeit ab Bearbeitungsbeginn','Zykluszeit misst nur Fehler','Durchlaufzeit gilt nur in Scrum'],a:1,e:'Die Durchlaufzeit ist die Kundensicht, die Zykluszeit die Teamsicht. Die Differenz ist Wartezeit.'},
+{c:'Modelle',q:'Was zeigt ein kumuliertes Flussdiagramm?',o:['Die Kosten je Sprint','Die Menge der Aufgaben je Spalte im Zeitverlauf und damit Engpässe','Die Teamzufriedenheit','Den kritischen Pfad'],a:1,e:'Wird ein Band im Zeitverlauf immer breiter, staut sich die Arbeit in dieser Spalte – dort liegt der Engpass.'},
+{c:'Modelle',q:'Welches Skalierungsrahmenwerk arbeitet mit einem Product Owner und einem Backlog für alle Teams?',o:['SAFe','LeSS','Nexus','Scrum of Scrums'],a:1,e:'LeSS skaliert Scrum konsequent hoch. Nexus ergänzt ein Integrationsteam, SAFe arbeitet mit mehreren Ebenen.'},
+{c:'Modelle',q:'Was kennzeichnet einen agilen Festpreis?',o:['Fixer Umfang, variables Budget','Fixes Budget und fixe Zeit, variabler Umfang mit Priorisierung durch den Auftraggeber','Abrechnung rein nach Aufwand','Keine Abnahme'],a:1,e:'Das Risiko wird geteilt. Voraussetzung sind ein aktiver Product Owner und Vertrauen zwischen den Parteien.'},
+{c:'Modelle',q:'Welches Verhalten ist ein typisches Scrum-Anti-Pattern?',o:['Die Retrospektive endet mit einer Maßnahme samt Verantwortlichem','Der Sprint wird verlängert, weil noch etwas fehlt','Das Daily dauert 15 Minuten','Der Product Owner priorisiert das Backlog'],a:1,e:'Die Timebox eines Sprints ist unveränderlich. Unfertige Einträge gehen zurück ins Product Backlog.'},
+
+{c:'Recht',q:'Welcher BSI-Standard beschreibt die Risikoanalyse?',o:['200-1','200-2','200-3','200-4'],a:2,e:'200-1 ISMS, 200-2 Grundschutz-Methodik, 200-3 Risikoanalyse, 200-4 Business Continuity Management.'},
+{c:'Recht',q:'Welcher Schritt folgt im IT-Grundschutz auf die Schutzbedarfsfeststellung?',o:['Strukturanalyse','Modellierung mit den Bausteinen des Kompendiums','Realisierung','Zertifizierung'],a:1,e:'Reihenfolge: Strukturanalyse, Schutzbedarfsfeststellung, Modellierung, Grundschutz-Check, Risikoanalyse, Realisierung.'},
+{c:'Recht',q:'Was prüft der IT-Grundschutz-Check?',o:['Die Wirtschaftlichkeit der Maßnahmen','Den Soll-Ist-Vergleich je Anforderung: umgesetzt, teilweise, entbehrlich, nicht umgesetzt','Die Verfügbarkeit der Systeme','Die Einhaltung der Lizenzbedingungen'],a:1,e:'Er zeigt, welche Anforderungen der modellierten Bausteine bereits erfüllt sind und wo Handlungsbedarf besteht.'},
+{c:'Recht',q:'Was regelt der Joiner-Mover-Leaver-Prozess?',o:['Die Einarbeitung neuer Mitarbeiter','Vergabe, Anpassung und Entzug von Berechtigungen bei Eintritt, Wechsel und Austritt','Die Urlaubsplanung','Den Gerätetausch'],a:1,e:'Ohne den Entzug alter Rechte beim Abteilungswechsel sammeln Mitarbeitende über Jahre Berechtigungen an.'},
+{c:'Recht',q:'Welches Verfahren wird bei TLS eingesetzt?',o:['Rein symmetrisch','Rein asymmetrisch','Hybrid: asymmetrischer Austausch eines symmetrischen Sitzungsschlüssels','Nur Hashverfahren'],a:2,e:'Asymmetrische Verfahren sichern den Schlüsselaustausch, die eigentliche Übertragung läuft schnell symmetrisch.'},
+{c:'Recht',q:'Wozu dient ein Hashverfahren?',o:['Zur Verschlüsselung von Dateien','Zur Integritätsprüfung und Kennwortspeicherung','Zum Schlüsselaustausch','Zur Komprimierung'],a:1,e:'Hashes sind Einwegfunktionen und keine Verschlüsselung. Für Kennwörter werden sie mit einem Salt kombiniert.'},
+{c:'Recht',q:'Was ist bei der Protokollierung von Systemzugriffen zu beachten?',o:['Möglichst alles unbegrenzt speichern','Zweckbindung, begrenzte Aufbewahrung, Zugriffsbeschränkung und Regelung der Auswertung mit dem Betriebsrat','Nur Administratoren protokollieren','Protokolle sind datenschutzrechtlich unbedenklich'],a:1,e:'Protokolle ermöglichen Verhaltens- und Leistungskontrolle und sind daher mitbestimmungspflichtig.'},
+{c:'Recht',q:'Wann ist eine Datenschutz-Folgenabschätzung erforderlich?',o:['Bei jeder neuen Software','Bei voraussichtlich hohem Risiko für die Rechte der Betroffenen','Nur bei Cloud-Diensten','Nur auf Anordnung der Aufsichtsbehörde'],a:1,e:'Etwa bei umfangreicher Überwachung, besonderen Datenkategorien oder neuen Technologien.'},
+{c:'Recht',q:'Woraus besteht eine Löschregel nach DIN 66398?',o:['Aus Datenart und Speicherort','Aus Löschfrist und Startzeitpunkt der Frist','Aus Verantwortlichem und Software','Aus Zweck und Rechtsgrundlage'],a:1,e:'Beispiel: Bewerbungsunterlagen sechs Monate ab Absage. Mehrere Regeln werden zu Löschklassen zusammengefasst.'},
+{c:'Recht',q:'Was ergibt eine Business Impact Analyse?',o:['Die Wirtschaftlichkeit einer Investition','Die zeitkritischen Prozesse und daraus RTO, RPO und maximal tolerierbare Ausfallzeit','Die Anzahl der Sicherheitsvorfälle','Die Höhe der Versicherungsprämie'],a:1,e:'Sie ist die Grundlage jedes Notfallkonzepts: erst der Bedarf, dann die technische Lösung.'},
+{c:'Recht',q:'Warum muss ein Notfallhandbuch offline verfügbar sein?',o:['Aus Kostengründen','Weil es sonst genau dann nicht erreichbar ist, wenn es gebraucht wird','Wegen der Aufbewahrungsfrist','Weil Papier rechtssicher ist'],a:1,e:'Ein PDF auf dem ausgefallenen oder verschlüsselten Fileserver hilft im Ernstfall niemandem.'},
+{c:'Recht',q:'Was ist bei einer Phishing-Simulation zu beachten?',o:['Sie darf ohne Beteiligung durchgeführt werden','Abstimmung mit Betriebsrat und Datenschutz, keine personenbezogene Auswertung','Sie muss namentlich ausgewertet werden','Sie ist unzulässig'],a:1,e:'Awareness-Maßnahmen sind sinnvoll, dürfen aber nicht zur Leistungs- oder Verhaltenskontrolle einzelner werden.'}
+);
+
+K.push(
+{c:'Planung',f:'Drei Netzplanarten',b:'Vorgangsknotennetz (MPM/PDM, deutscher Standard) · Vorgangspfeilnetz (CPM, braucht Scheinvorgänge) · Ereignisknotennetz (PERT, mit Dreipunktschätzung).'},
+{c:'Planung',f:'Minimal- und Maximalabstand',b:'Minimalabstand (Lag): erzwungene Wartezeit, z. B. Lieferzeit. Maximalabstand (Lead): höchstens zulässiger Abstand, z. B. Migration und Freigabe dürfen nicht weiter auseinanderliegen.'},
+{c:'Planung',f:'Unabhängiger Puffer',b:'UP = max(0; min FAZ der Nachfolger − max SEZ der Vorgänger − Dauer). Der einzige Puffer, den ein Vorgang wirklich allein besitzt. Es gilt immer UP ≤ FP ≤ GP.'},
+{c:'Planung',f:'Crashing rechnen',b:'Kostensteigerungsrate = (Crashkosten − Normalkosten) / (Normaldauer − Crashdauer). Immer den günstigsten Vorgang auf dem kritischen Pfad verkürzen und danach prüfen, ob ein anderer Weg kritisch geworden ist.'},
+{c:'Planung',f:'PERT-Wahrscheinlichkeit',b:'σ des Pfades = Wurzel aus der Summe der Einzelvarianzen. z = (Zieltermin − erwartete Dauer) / σ. Bei z = 0 beträgt die Wahrscheinlichkeit 50 %, bei z = 1 rund 84 %.'},
+{c:'Planung',f:'Ressourcenglättung vs. beschränkte Planung',b:'Glättung verschiebt nur innerhalb der Puffer, der Endtermin bleibt. Ressourcenbeschränkte Planung akzeptiert eine Verschiebung des Endtermins; es entsteht ein ressourcenkritischer Pfad.'},
+{c:'Planung',f:'Maschinenstundensatz',b:'(kalkulatorische Abschreibung + kalkulatorische Zinsen + Energie + Wartung + Raumkosten) / jährliche Betriebsstunden. Kalkulatorische Zinsen auf das halbe Anschaffungskapital.'},
+{c:'Planung',f:'Kalkulationsrichtungen',b:'Vorwärts: vom Einkauf zum Verkaufspreis. Rückwärts: vom Marktpreis zu den zulässigen Selbstkosten. Differenz: beide Preise gegeben, gesucht ist der Gewinn.'},
+{c:'Planung',f:'Skonto als Jahreszins',b:'(Skontosatz × 360) / (Zahlungsziel − Skontofrist). Beispiel 2/10, netto 30 ergibt 36 % p. a. – Skonto zu ziehen lohnt fast immer.'},
+{c:'Planung',f:'Kapitalwert',b:'Summe der abgezinsten Rückflüsse minus Investition. Barwert = Zahlung / (1 + i)^n. Positiver Kapitalwert bedeutet: Verzinsung über dem Kalkulationszins, also vorteilhaft.'},
+{c:'Planung',f:'Interner Zinsfuß und Annuität',b:'Interner Zinsfuß: der Zinssatz, bei dem der Kapitalwert null wird – zeigt die tatsächliche Verzinsung. Annuität: verteilt den Kapitalwert gleichmäßig auf die Nutzungsjahre, gut bei unterschiedlich langen Laufzeiten.'},
+{c:'Modelle',f:'Die drei Scrum-Commitments',b:'Product Backlog → Product Goal · Sprint Backlog → Sprint Goal · Increment → Definition of Done.'},
+{c:'Modelle',f:'INVEST',b:'Independent · Negotiable · Valuable · Estimable · Small · Testable. Das wichtigste Kriterium ist testable – daraus entstehen direkt die Testfälle.'},
+{c:'Modelle',f:'Akzeptanzkriterien formulieren',b:'Gegeben <Ausgangslage>, wenn <Aktion>, dann <erwartetes Ergebnis>. Direkt in Testfälle übersetzbar, inklusive Negativ- und Grenzfällen.'},
+{c:'Modelle',f:'Velocity-Prognose',b:'Restbacklog / mittlere Velocity = verbleibende Sprints. Kommuniziert wird eine Spanne aus schlechtester und bester Velocity, keine scheingenaue Einzelzahl.'},
+{c:'Modelle',f:'Little\u2019s Gesetz',b:'Durchlaufzeit = Work in Progress / Durchsatz. Weniger parallele Arbeit verkürzt die Durchlaufzeit, ohne dass jemand schneller arbeiten muss.'},
+{c:'Modelle',f:'Kanban-Kennzahlen',b:'Durchlaufzeit (ab Eingang der Anforderung) · Zykluszeit (ab Bearbeitungsbeginn) · Durchsatz (Abschlüsse je Zeiteinheit) · kumuliertes Flussdiagramm zur Engpasserkennung.'},
+{c:'Modelle',f:'Agile Vertragsmodelle',b:'Festpreis auf Pflichtenheft (Aufwandsrisiko beim Auftragnehmer) · Time and Material (Kostenrisiko beim Auftraggeber) · agiler Festpreis (Budget und Zeit fix, Umfang variabel, Risiko geteilt).'},
+{c:'Modelle',f:'Scrum-Anti-Pattern',b:'Product Owner ohne Mandat · Daily als Statusbericht · Retro ohne Maßnahme · Velocity als Leistungsvorgabe · verlängerte Sprints · Definition of Done ohne Test und Dokumentation.'},
+{c:'Recht',f:'BSI-Standards 200-1 bis 200-4',b:'200-1 ISMS-Anforderungen · 200-2 Grundschutz-Methodik (Basis, Standard, Kern) · 200-3 Risikoanalyse · 200-4 Business Continuity Management.'},
+{c:'Recht',f:'Ablauf des IT-Grundschutzes',b:'Strukturanalyse → Schutzbedarfsfeststellung → Modellierung → Grundschutz-Check → Risikoanalyse nach 200-3 → Realisierung und Prüfung.'},
+{c:'Recht',f:'Schutzbedarfskategorien',b:'normal (begrenzt und überschaubar) · hoch (beträchtlich) · sehr hoch (existenziell bedrohlich). Bewertung über Schadensszenarien wie Gesetzesverstoß, Aufgabenerfüllung, Außenwirkung, Finanzen.'},
+{c:'Recht',f:'Grundsätze im Berechtigungskonzept',b:'RBAC statt Einzelrechte · Least Privilege und Need to know · Funktionstrennung · getrennte Administrationskonten · jährliche Rezertifizierung · Joiner-Mover-Leaver-Prozess.'},
+{c:'Recht',f:'Kryptoverfahren einordnen',b:'Symmetrisch: ein Schlüssel, schnell, für Datenverschlüsselung. Asymmetrisch: Schlüsselpaar, für Austausch und Signatur. Hybrid: TLS. Hash: Einwegfunktion für Integrität und Kennwörter.'},
+{c:'Recht',f:'Ablauf einer DSFA',b:'Erforderlichkeit prüfen → Verarbeitung beschreiben → Notwendigkeit und Verhältnismäßigkeit bewerten → Risiken für Betroffene bewerten → Abhilfemaßnahmen festlegen → dokumentieren und regelmäßig prüfen.'},
+{c:'Recht',f:'Löschregel nach DIN 66398',b:'Besteht aus Löschfrist und Startzeitpunkt. Beispiele: Bewerbungen 6 Monate ab Absage, Firewall-Protokolle 30 Tage, Buchungsbelege 10 Jahre ab Jahresende.'},
+{c:'Recht',f:'Business Impact Analyse',b:'Ermittelt die zeitkritischen Prozesse und daraus RTO, RPO und die maximal tolerierbare Ausfallzeit. Erst danach wird die technische Lösung ausgewählt.'}
+);
+
+FML.push(
+ {g:'Vertiefung Netzplan', items:[
+  ['Unabhängiger Puffer','UP = max(0; min FAZ der Nachfolger − max SEZ der Vorgänger − Dauer)'],
+  ['Pufferreihenfolge','UP ≤ FP ≤ GP (Kontrollregel)'],
+  ['Minimalabstand','FAZ des Nachfolgers ≥ FEZ des Vorgängers + Abstand'],
+  ['Kostensteigerungsrate','(Crashkosten − Normalkosten) / (Normaldauer − Crashdauer)'],
+  ['Standardabweichung eines Pfades','σ = √(σ₁² + σ₂² + … + σₙ²)'],
+  ['Termin-Wahrscheinlichkeit','z = (Zieltermin − erwartete Dauer) / σ des Pfades']
+ ]},
+ {g:'Vertiefung Kalkulation', items:[
+  ['Maschinenstundensatz','jährliche Anlagenkosten / jährliche Betriebsstunden'],
+  ['Kalkulatorische Zinsen','(Anschaffungswert / 2) × Zinssatz'],
+  ['Skonto als Jahreszins','(Skontosatz × 360) / (Zahlungsziel − Skontofrist)'],
+  ['Rückwärtskalkulation','abwärts multiplizieren: × (1 − Rabatt), × (1 − Skonto); Gewinn abwärts dividieren'],
+  ['Break-even-Umsatz','Break-even-Menge × Preis'],
+  ['Sicherheitskoeffizient','(Istmenge − Break-even-Menge) / Istmenge × 100 %'],
+  ['Barwert','Zahlung / (1 + i)ⁿ'],
+  ['Kapitalwert','Σ Barwerte der Rückflüsse − Investition'],
+  ['Interner Zinsfuß','Zinssatz, bei dem der Kapitalwert genau null ist']
+ ]},
+ {g:'Agile Kennzahlen', items:[
+  ['Velocity','Mittelwert der abgeschlossenen Story Points der letzten Sprints'],
+  ['Sprint-Prognose','Restbacklog in Story Points / mittlere Velocity'],
+  ['Little\u2019s Gesetz','Durchlaufzeit = Work in Progress / Durchsatz'],
+  ['Durchsatz','abgeschlossene Aufgaben / Zeiteinheit'],
+  ['Zykluszeit','Bearbeitungsbeginn bis Fertigstellung (Teamsicht)'],
+  ['Durchlaufzeit','Eingang der Anforderung bis Auslieferung (Kundensicht)']
+ ]}
+);
+
+/* ===================== ABLAUFPLAN ===================== */
+const ABL_INTRO = [
+ {t:'Arbeitspakete aus dem PSP übernehmen',
+  d:'Der Ablaufplan wird nie aus dem Nichts geschrieben. Grundlage ist der Projektstrukturplan: Jedes Arbeitspaket der untersten Ebene wird zu einem <b>Vorgang</b>. Wer ohne PSP mit der Terminplanung beginnt, vergisst zuverlässig Aufgaben und schätzt ins Blaue.'},
+ {t:'Dauer je Vorgang bestimmen',
+  d:'Aus dem geschätzten <b>Aufwand</b> in Personenstunden wird die <b>Dauer</b> in Arbeitstagen. Beide sind nicht dasselbe: 40 Personenstunden ergeben bei einer Person 5 Tage, bei zwei Personen 2,5 Tage – aber nur, wenn die Aufgabe teilbar ist. Eine Kompatibilitätsprüfung lässt sich aufteilen, ein Wartungsfenster nicht.'},
+ {t:'Anordnungsbeziehungen festlegen',
+  d:'Für jeden Vorgang wird bestimmt, was zwingend vorher fertig sein muss. Regelfall ist die <b>Normalfolge</b> (Ende–Anfang). Wichtig ist die Unterscheidung zwischen einer echten fachlichen Abhängigkeit („Das Image muss stehen, bevor der Pilot startet") und einer reinen Ressourcenabhängigkeit („Beides macht derselbe Kollege") – letztere gehört in die Ressourcenplanung, nicht in den Ablaufplan.'},
+ {t:'Vorwärtsrechnung durchführen',
+  d:'Von links nach rechts werden FAZ und FEZ bestimmt: FEZ = FAZ + Dauer. Hat ein Vorgang mehrere Vorgänger, gilt das <b>Maximum</b> ihrer FEZ, weil er erst starten kann, wenn alle fertig sind. Der größte FEZ am Ende ist die Projektdauer.'},
+ {t:'Rückwärtsrechnung durchführen',
+  d:'Von rechts nach links werden SEZ und SAZ bestimmt: SAZ = SEZ − Dauer. Hat ein Vorgang mehrere Nachfolger, gilt das <b>Minimum</b> ihrer SAZ, damit kein Nachfolger verzögert wird. Der letzte Vorgang bekommt als SEZ die Projektdauer.'},
+ {t:'Puffer und kritischen Pfad ermitteln',
+  d:'Gesamtpuffer GP = SAZ − FAZ. Alle Vorgänge mit GP = 0 bilden den <b>kritischen Pfad</b> – dort wirkt jede Verzögerung sofort auf den Endtermin. Freier Puffer FP = kleinster FAZ der Nachfolger − FEZ. Kontrolle: FP ist nie größer als GP.'},
+ {t:'In Kalendertermine übersetzen und darstellen',
+  d:'Erst jetzt werden aus Arbeitstagen echte Daten: Wochenenden, Feiertage, Urlaub, Betriebsferien und feste Wartungsfenster werden eingerechnet. Anschließend Meilensteine setzen und das Ergebnis als <b>Balkenplan</b> darstellen – der Netzplan dient der Berechnung, der Balkenplan der Kommunikation mit dem Auftraggeber.'}
+];
+
+const ABL = [
+{p:'Initiierung', kurz:'Idee prüfen', anteil:5, dauer:'1–2 Wochen',
+ ziel:'Feststellen, ob aus der Idee überhaupt ein Projekt werden soll – bevor Aufwand entsteht.',
+ schritte:[
+  ['Auslöser und Ausgangslage beschreiben','Was ist konkret das Problem? Zahlen statt Eindrücke: „Support bearbeitet monatlich 40 Kennwortrückstellungen à 12 Minuten" statt „viel Aufwand".'],
+  ['Grobziel und erwarteten Nutzen formulieren','Noch nicht SMART, aber schon greifbar. Nutzen möglichst monetär beziffern oder wenigstens qualitativ benennen.'],
+  ['Grobe Aufwands- und Kostenschätzung','Analogiemethode reicht: Was hat ein vergleichbares Vorhaben gekostet? Genauigkeit in dieser Phase realistisch ±50 %.'],
+  ['Machbarkeit prüfen','Technisch, wirtschaftlich, personell, rechtlich. Ein Vorhaben ohne verfügbares Know-how und ohne Budget ist kein Projekt, sondern ein Wunsch.'],
+  ['Projektantrag stellen','Kurz, meist ein bis zwei Seiten: Ausgangslage, Ziel, Nutzen, grober Aufwand, grober Termin.'],
+  ['Entscheidung einholen','Genehmigung durch Geschäftsleitung oder Lenkungsausschuss. Ohne Entscheidung wird nicht weitergearbeitet.']
+ ],
+ ergebnisse:['Projektantrag','Grobe Machbarkeitseinschätzung','Entscheidungsvorlage'],
+ beteiligte:['Ideengeber / Fachbereich','Geschäftsleitung','IT-Leitung'],
+ ms:'M0 – Projektantrag genehmigt',
+ fehler:['Aufwand zu optimistisch geschätzt, weil der Antrag „durchgehen" soll','Kein bezifferter Nutzen, dadurch keine Vergleichbarkeit im Portfolio','Vorhaben ist in Wahrheit Tagesgeschäft ohne Entscheidungsspielraum'],
+ pruefung:'Für den betrieblichen Auftrag der AP2 ist genau diese Phase der Projektantrag. Er wird abgelehnt, wenn Planungs- und Entscheidungsanteile fehlen.'},
+
+{p:'Definition', kurz:'Auftrag und Ziele', anteil:8, dauer:'1–2 Wochen',
+ ziel:'Verbindliche Grundlage schaffen: Wer macht was, mit welchem Ziel, in welchem Rahmen.',
+ schritte:[
+  ['Projektauftrag erstellen','Enthält Projektname, Auftraggeber, Projektleiter, Ausgangslage, Ziele, Nicht-Ziele, Termin- und Budgetrahmen, zugesagte Ressourcen und Befugnisse.'],
+  ['Ziele SMART formulieren','Spezifisch, messbar, akzeptiert, realistisch, terminiert. Ergänzt um Muss-, Soll- und Kann-Ziele für den Fall von Engpässen.'],
+  ['Nicht-Ziele festlegen','Ausdrücklich aufschreiben, was das Projekt nicht leistet. Das ist der wirksamste Schutz gegen Scope Creep.'],
+  ['Stakeholder analysieren','Identifizieren, nach Einfluss und Einstellung bewerten, Maßnahmen ableiten. Betriebsrat und Datenschutzbeauftragten nicht vergessen.'],
+  ['Projektorganisation festlegen','Organisationsform wählen, Rollen besetzen, Vertretungen regeln, RACI-Matrix für strittige Aufgaben.'],
+  ['Kommunikationsregeln vereinbaren','Berichtsrhythmus, Jour-fixe-Termin, Eskalationsweg, Ablageort für Dokumente, Protokollpflicht.'],
+  ['Kick-off durchführen','Team, Ziele, Nicht-Ziele, Rollen, grober Terminplan, Spielregeln. Ergebnis ist ein Protokoll, nicht nur gute Stimmung.']
+ ],
+ ergebnisse:['Projektauftrag','Zielkatalog mit Nicht-Zielen','Stakeholderanalyse','Projekthandbuch (Grundgerüst)','Kick-off-Protokoll'],
+ beteiligte:['Auftraggeber','Projektleiter','Projektteam','Betriebsrat und Datenschutz bei Bedarf'],
+ ms:'M1 – Projektauftrag unterschrieben, Kick-off erfolgt',
+ fehler:['Ziele nicht messbar formuliert, dadurch später keine Abnahmegrundlage','Nicht-Ziele fehlen','Projektleiter erhält Verantwortung, aber keine Befugnisse','Stakeholder mit hohem Einfluss übersehen'],
+ pruefung:'Klassische Aufgabe: Eine unklare Zielformulierung SMART umschreiben und begründen, warum die ursprüngliche Fassung nicht abnahmefähig ist.'},
+
+{p:'Anforderungen', kurz:'Lasten- und Pflichtenheft', anteil:10, dauer:'2–4 Wochen',
+ ziel:'Genau festlegen, was geliefert werden muss – prüfbar und vollständig.',
+ schritte:[
+  ['Ist-Aufnahme durchführen','Bestandssysteme, Schnittstellen, Mengengerüste, vorhandene Dokumentation. Häufig ist der dokumentierte Ist-Zustand veraltet – nachmessen statt glauben.'],
+  ['Anforderungen erheben','Interviews mit Fachbereich und Key Usern, Beobachtung am Arbeitsplatz, Auswertung vorhandener Tickets.'],
+  ['Funktionale und nichtfunktionale Anforderungen trennen','Was das System tut gegenüber Qualitätseigenschaften wie Antwortzeit, Verfügbarkeit, Sicherheit, Bedienbarkeit. Nichtfunktionale werden am häufigsten vergessen.'],
+  ['Anforderungen prüfbar formulieren','Jede Anforderung mit eindeutiger ID, einem Satz, Priorität (Muss/Soll/Kann) und messbarem Kriterium. Unbestimmte Begriffe wie „schnell" oder „benutzerfreundlich" ersetzen.'],
+  ['Lastenheft erstellen und freigeben','Lösungsneutral aus Sicht des Auftraggebers, ergänzt um Rahmenbedingungen, Abnahmekriterien und Lieferumfang.'],
+  ['Pflichtenheft prüfen und abnehmen','Antwort des Auftragnehmers auf das Lastenheft: Wie und womit wird umgesetzt? Nach Freigabe ist es Vertragsbestandteil.'],
+  ['Änderungsverfahren vereinbaren','Ab jetzt laufen Änderungen über einen Change Request mit Bewertung der Auswirkungen auf Zeit, Kosten und Qualität.']
+ ],
+ ergebnisse:['Ist-Analyse','Anforderungsliste mit IDs und Prioritäten','Lastenheft','Freigegebenes Pflichtenheft','Change-Request-Vorlage'],
+ beteiligte:['Fachbereich und Key User','Projektleiter','Auftragnehmer / Anbieter','Datenschutzbeauftragter'],
+ ms:'M2 – Pflichtenheft freigegeben',
+ fehler:['Lösungen statt Anforderungen im Lastenheft, dadurch unnötige Einschränkung der Anbieter','Nichtfunktionale Anforderungen fehlen und verursachen später teure Nachbesserungen','Keine IDs, dadurch keine Nachverfolgbarkeit zu Tests und Abnahme'],
+ pruefung:'Sehr häufig: Aus einer Kundenbeschreibung drei funktionale und zwei nichtfunktionale Anforderungen ableiten und eine mangelhafte Formulierung korrigieren.'},
+
+{p:'Planung', kurz:'PSP, Termine, Kosten, Risiken', anteil:15, dauer:'2–4 Wochen',
+ ziel:'Das Projekt so durchdenken, dass Termine, Kosten und Ressourcen belastbar sind.',
+ schritte:[
+  ['Projektstrukturplan erstellen','Zerlegung in Teilprojekte, Teilaufgaben und Arbeitspakete. 100-Prozent-Regel beachten: keine Lücken, keine Überschneidungen.'],
+  ['Arbeitspakete beschreiben','Je Paket: Code, Ziel, Verantwortlicher, Aufwand, Ressourcen, Vorgänger, Abnahmekriterium.'],
+  ['Aufwand schätzen','Verfahren passend wählen: Multiplikatormethode bei Mengen, Dreipunktschätzung bei Unsicherheit, Analogie bei Erfahrungswerten. Ergebnis dokumentieren, nicht nur die Zahl.'],
+  ['Ablaufplan erstellen','Vorgänge, Dauern und Anordnungsbeziehungen festlegen, Vorwärts- und Rückwärtsrechnung durchführen, Puffer und kritischen Pfad bestimmen (siehe die sieben Schritte oben).'],
+  ['Ressourcen planen und abgleichen','Nettokapazität ansetzen, nicht die Bruttoarbeitszeit. Überlast zuerst über vorhandene Puffer auflösen, dann über zusätzliche Kapazität.'],
+  ['Kosten planen','Personalkosten aus Aufwand mal Stundensatz, dazu Sachkosten, Fremdleistungen und ein Risikozuschlag von typischerweise 10–20 %.'],
+  ['Risiken identifizieren und bewerten','Risikoregister anlegen, je Risiko Wahrscheinlichkeit und Schaden bewerten, Strategie und Maßnahme mit Verantwortlichem und Termin festlegen.'],
+  ['Qualitätsmaßnahmen festlegen','Abnahmekriterien je Arbeitspaket, Testarten, Reviewpunkte, Definition of Done.'],
+  ['Meilensteine setzen und Baseline einfrieren','Der freigegebene Planstand ist ab jetzt der Vergleichsmaßstab für das Controlling. Änderungen nur über das Änderungsverfahren.']
+ ],
+ ergebnisse:['PSP mit Arbeitspaketbeschreibungen','Netzplan und Balkenplan','Ressourcen- und Kapazitätsplan','Kostenplan','Risikoregister','Qualitäts- und Testkonzept','Eingefrorene Baseline'],
+ beteiligte:['Projektleiter','Teilprojektleiter','Fachexperten für die Schätzung','Einkauf','Controlling'],
+ ms:'M3 – Projektplan freigegeben, Baseline gesetzt',
+ fehler:['Terminplan ohne PSP – Aufgaben fehlen','Bruttokapazität angesetzt, dadurch von Anfang an unrealistisch','Puffer versteckt in einzelnen Vorgängen statt offen ausgewiesen','Risiken einmalig gesammelt und danach nie wieder angesehen'],
+ pruefung:'Der Schwerpunkt der schriftlichen Prüfung: Netzplan berechnen, Puffer bestimmen, kritischen Pfad benennen, Auswirkung einer Verzögerung beurteilen.'},
+
+{p:'Beschaffung', kurz:'Angebote und Bestellung', anteil:8, dauer:'2–8 Wochen',
+ ziel:'Benötigte Leistungen und Güter rechtzeitig, wirtschaftlich und rechtssicher besorgen.',
+ schritte:[
+  ['Bedarf aus dem PSP ableiten','Welche Hardware, Lizenzen, Fremdleistungen und Dienstleistungen werden je Arbeitspaket benötigt?'],
+  ['Anfrage erstellen und versenden','Auf Basis des Lastenhefts an mindestens drei Anbieter. Bei öffentlichen Auftraggebern gilt das Vergaberecht.'],
+  ['Angebote vergleichen','Quantitativ über den Bezugspreis (Liste − Rabatt − Skonto + Bezugskosten), qualitativ über eine Nutzwertanalyse mit Kriterien wie Support, Referenzen, Reaktionszeit.'],
+  ['Vertragsart klären','Werkvertrag bei geschuldetem Erfolg, Dienstvertrag bei Tätigkeit, Kauf bei Sachen, Miete bei Cloud. Davon hängen Abnahme und Gewährleistung ab.'],
+  ['Bestellung auslösen','Liefertermine verbindlich vereinbaren, bei kritischen Positionen Vertragsstrafe erwägen. Lange Lieferzeiten gehören ins Risikoregister.'],
+  ['Wareneingang prüfen','Menge, Zustand, Seriennummern, Lizenznachweise. Abweichungen sofort rügen und dokumentieren.']
+ ],
+ ergebnisse:['Angebotsvergleich','Bestellungen','Verträge und Lizenznachweise','Wareneingangsprotokolle'],
+ beteiligte:['Projektleiter','Einkauf','Anbieter','Rechtsabteilung bei größeren Verträgen'],
+ ms:'M4 – Material und Leistungen verfügbar',
+ fehler:['Lieferzeiten unterschätzt – der häufigste Grund für Terminverzug in Infrastrukturprojekten','Angebote über den Listenpreis statt über den Bezugspreis verglichen','Mitwirkungspflichten und Leistungsabgrenzung im Vertrag nicht geregelt'],
+ pruefung:'Typisch: Drei Angebote rechnerisch auf den Bezugspreis bringen und zusätzlich über eine Nutzwertanalyse bewerten.'},
+
+{p:'Realisierung', kurz:'Umsetzung und Pilot', anteil:35, dauer:'projektabhängig',
+ ziel:'Die geplante Lösung herstellen – kontrolliert, nachvollziehbar und ohne den Betrieb zu gefährden.',
+ schritte:[
+  ['Testumgebung aufbauen','Nichts wird zuerst in der Produktion ausprobiert. Die Testumgebung muss der Produktion hinreichend ähneln, sonst sind die Ergebnisse wertlos.'],
+  ['Konfiguration erstellen und dokumentieren','Parallel dokumentieren, nicht nachträglich. Jede Abweichung vom Konzept mit Begründung festhalten.'],
+  ['Pilot mit repräsentativer Gruppe','Nicht die technikaffinsten Kollegen auswählen, sondern einen realistischen Querschnitt. Feedback strukturiert erfassen.'],
+  ['Pilot auswerten und nachsteuern','Erst nach dokumentierter Auswertung und Freigabe geht es in den Serienbetrieb. Diese Freigabe ist ein Meilenstein.'],
+  ['Rollout nach Kalender durchführen','Gruppenweise nach Abhängigkeiten, mit angekündigten Wartungsfenstern und einem Rückfallweg je Schritt.'],
+  ['Fortschritt messen und berichten','Fertigstellungsgrad nach der 0/100-Regel, Statusbericht im vereinbarten Rhythmus, Abweichungen mit Ursache, Maßnahme und Auswirkung.'],
+  ['Änderungen über Change Requests steuern','Jede neue Anforderung wird bewertet und entschieden, nicht nebenbei mit erledigt.'],
+  ['Risiken laufend neu bewerten','Im Jour fixe das Risikoregister durchgehen. Eingetretene Risiken werden zu Problemen und in die Steuerung überführt.']
+ ],
+ ergebnisse:['Konfigurierte Systeme','Pilotbericht mit Freigabe','Rollout-Protokolle','Statusberichte','Aktualisiertes Risikoregister'],
+ beteiligte:['Projektteam','Key User','Fachbereich','Externe Dienstleister'],
+ ms:'M5 – Pilot erfolgreich · M6 – Rollout abgeschlossen',
+ fehler:['Dokumentation auf später verschoben und dann nie erstellt','Pilot übersprungen, um Zeit zu sparen – kostet am Ende mehr','Kein Rückfallweg je Rollout-Schritt','Meldung „90 % fertig" über mehrere Wochen'],
+ pruefung:'Häufig als Handlungsaufgabe: Ein Rollout gerät in Verzug, drei Steuerungsmaßnahmen mit Begründung nennen.'},
+
+{p:'Test und Abnahme', kurz:'Nachweis der Erfüllung', anteil:10, dauer:'1–3 Wochen',
+ ziel:'Belegen, dass die vereinbarten Anforderungen erfüllt sind – und das rechtssicher dokumentieren.',
+ schritte:[
+  ['Testfälle aus den Anforderungen ableiten','Je Anforderung mindestens ein Testfall. Anforderungs-Test-Matrix zeigt Lücken sofort.'],
+  ['Testfälle vollständig beschreiben','Vorbedingung, Aktion, erwartetes Ergebnis. Negativtests für unzulässige Eingaben und Fehlerfälle einplanen.'],
+  ['Tests stufenweise durchführen','Modultest, Integrationstest, Systemtest, danach Abnahmetest durch den Auftraggeber bzw. die Key User.'],
+  ['Fehler klassifizieren und beheben','A kritisch, B wesentlich, C gering. Nach der Behebung Regressionstest, damit nichts anderes beschädigt wurde.'],
+  ['Abnahmetermin durchführen','Gemeinsam mit dem Auftraggeber, anhand der vorbereiteten Testfälle und Abnahmekriterien.'],
+  ['Abnahmeprotokoll unterschreiben','Gegenstand, Datum, Beteiligte, Prüfergebnis, Mängel mit Frist und Verantwortlichem, Vorbehalte, Unterschriften.']
+ ],
+ ergebnisse:['Testkonzept und Testfälle','Testprotokolle','Mängelliste mit Fristen','Unterschriebenes Abnahmeprotokoll'],
+ beteiligte:['Testverantwortlicher','Key User','Auftraggeber','Auftragnehmer'],
+ ms:'M7 – Abnahme erfolgt',
+ fehler:['Testfälle ohne erwartetes Ergebnis – nicht auswertbar','Nur der Erfolgsfall getestet','Abnahme mündlich, ohne Protokoll','Mängel ohne Frist und Verantwortlichen notiert'],
+ pruefung:'Beliebt: Vier Testfälle zu einer Anforderung entwerfen, davon mindestens zwei Negativtests, sowie die Rechtsfolgen der Abnahme beim Werkvertrag erläutern.'},
+
+{p:'Übergabe und Abschluss', kurz:'In den Betrieb und Lessons Learned', anteil:9, dauer:'1–3 Wochen',
+ ziel:'Das Ergebnis dauerhaft betriebsfähig machen und das Projekt sauber beenden.',
+ schritte:[
+  ['Betriebsdokumentation fertigstellen','Systemarchitektur, Konfiguration, Wartungsroutinen, Backup- und Wiederherstellungsverfahren, Monitoring, Notfallmaßnahmen, Ansprechpartner.'],
+  ['Anwender schulen','Zeitnah zur Umstellung, zielgruppengerecht, mit einseitigen Kurzanleitungen statt dickem Handbuch.'],
+  ['Übergabe an den Betrieb','Formaler Übergabetermin mit Checkliste: Monitoring aktiv, Wartungsvertrag läuft, CMDB aktualisiert, Zuständigkeiten benannt.'],
+  ['Hypercare-Phase begleiten','Verstärkter Support in den ersten Tagen, Störungen auswerten, letzte Anpassungen vornehmen.'],
+  ['Nachkalkulation erstellen','Plan-Ist-Vergleich der Aufwände und Kosten mit Begründung der Abweichungen – die Grundlage besserer Schätzungen im nächsten Projekt.'],
+  ['Lessons Learned moderieren','Was lief gut, was nicht, was machen wir künftig anders? Ergebnisse in Checklisten und Vorlagen überführen, sonst verpuffen sie.'],
+  ['Abschlussbericht und Entlastung','Zielerreichung, Kennzahlen, Lessons Learned. Der Lenkungsausschuss entlastet den Projektleiter formal.'],
+  ['Projekt auflösen','Team entlasten, Testumgebungen und Sonderberechtigungen abbauen, Projektablage archivieren, Altgeräte datenschutzkonform verwerten.']
+ ],
+ ergebnisse:['Betriebs- und Anwenderdokumentation','Übergabeprotokoll','Nachkalkulation','Lessons-Learned-Protokoll','Abschlussbericht','Projektarchiv'],
+ beteiligte:['Projektleiter','Betrieb / Servicemanagement','Auftraggeber','Lenkungsausschuss','Controlling'],
+ ms:'M8 – Betriebsübergabe · M9 – Projekt formal abgeschlossen',
+ fehler:['Team ist schon im nächsten Projekt, der Abschluss verläuft im Sand','Betrieb übernimmt ein System ohne Dokumentation','Keine Nachkalkulation – künftige Schätzungen bleiben Raten','Sonderberechtigungen und Testzugänge bleiben bestehen'],
+ pruefung:'Für die AP2 zentral: Soll-Ist-Vergleich mit Begründung der Abweichungen sowie ein Fazit mit Ausblick gehören in jede Projektdokumentation.'}
+];
+
 /* ===================== NAVIGATION ===================== */
 const VIEWS = [
- ['start','Start'],['lernen','Lernen'],['rechner','Rechner'],['quiz','Quiz'],
+ ['start','Start'],['lernen','Lernen'],['ablauf','Ablaufplan'],['rechner','Rechner'],['quiz','Quiz'],
  ['karten','Karteikarten'],['faelle','Fallstudien'],['pruefung','Prüfung'],['formeln','Formeln'],['glossar','Glossar'],['info','Info']
 ];
 function buildNav(){
@@ -2665,6 +3368,7 @@ function go(id){
   if(id==='karten') renderKarten();
   if(id==='rechner') renderRechner();
   if(id==='faelle') renderFaelle();
+  if(id==='ablauf') renderAblauf();
 }
 
 /* ===================== FORTSCHRITT ===================== */
@@ -2730,6 +3434,7 @@ function renderStart(){
         <button class="btn sm" onclick="go('rechner')">Netzplan rechnen</button>
         <button class="btn sm" onclick="go('quiz')">Quiz starten</button>
         <button class="btn sm" onclick="go('karten')">Karteikarten</button>
+        <button class="btn sm" onclick="go('ablauf')">Ablaufplan</button>
         <button class="btn sm" onclick="go('faelle')">Fallstudien</button>
         <button class="btn sm" onclick="go('formeln')">Formelsammlung</button>
         <button class="btn sm" onclick="go('glossar')">Glossar</button>
@@ -3433,6 +4138,104 @@ function finishEx(){
   window.scrollTo({top:0,behavior:'instant'});
 }
 
+/* ===================== ABLAUFPLAN-ANSICHT ===================== */
+let ablOffen = 0;
+const ABLC = ['#2dd4bf','#38bdf8','#a78bfa','#f5b74e','#fb923c','#4ade80','#f472b6','#94a3b8'];
+function ablDone(){ return Object.keys(S.abl).filter(k=>S.abl[k]).length; }
+function ablTotal(){ return ABL.reduce((a,p)=>a+p.schritte.length,0); }
+function renderAblauf(){
+  const done = ablDone(), tot = ablTotal();
+  let off = 0;
+  const bars = ABL.map((p,i)=>{ const b={l:off,w:p.anteil,i}; off+=p.anteil; return b; });
+  $('#v-ablauf').innerHTML = `
+    <h2>Ablaufplan eines IT-Projekts</h2>
+    <p class="muted small">Acht Phasen von der Idee bis zum Projektarchiv – jeder Schritt einzeln erklärt, mit Ergebnisdokumenten, Beteiligten, Meilenstein, typischen Fehlern und Prüfungshinweis. Die Häkchen bleiben lokal gespeichert, du kannst den Plan also als Arbeitscheckliste für ein echtes Projekt nutzen.</p>
+
+    <div class="card">
+      <div class="eyebrow">Phasenübersicht · relativer Zeitanteil</div>
+      <div class="gantt-track" style="height:22px;margin:.7rem 0 .6rem;display:flex;overflow:hidden">
+        ${bars.map(b=>`<div title="${ABL[b.i].p}" style="width:${b.w}%;background:${ABLC[b.i]};border-right:1px solid var(--bg-deep)"></div>`).join('')}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:.45rem">
+        ${ABL.map((p,i)=>`<button class="btn sm ${i===ablOffen?'primary':''}" onclick="ablOffen=${i};renderAblauf();document.getElementById('phase').scrollIntoView({block:'start'})">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${ABLC[i]}"></span> ${i+1}. ${p.p}</button>`).join('')}
+      </div>
+      <p class="small muted" style="margin:.8rem 0 0">Die Balkenbreite zeigt den typischen Zeitanteil. Auffällig: Analyse, Definition, Anforderungen und Planung binden zusammen rund 38 % der Laufzeit. Wer hier kürzt, zahlt in der Realisierung das Mehrfache drauf.</p>
+    </div>
+
+    <div class="card">
+      <h3>So entsteht ein Ablaufplan – sieben Schritte</h3>
+      <p class="small muted">Der Ablaufplan ist das Herzstück der Terminplanung. Diese Reihenfolge gilt unabhängig vom Projekt.</p>
+      ${ABL_INTRO.map((s2,i)=>`
+        <div style="display:flex;gap:.75rem;padding:.6rem 0;border-bottom:${i<ABL_INTRO.length-1?'1px solid var(--line)':'0'}">
+          <span class="mono" style="color:var(--teal);flex:none;font-weight:600">${i+1}</span>
+          <div><b>${s2.t}</b><br><span class="small muted">${s2.d}</span></div>
+        </div>`).join('')}
+      <button class="btn sm" style="margin-top:.9rem" onclick="calcTab='netz';go('rechner')">Schritte 4 bis 6 im Netzplanrechner ausprobieren</button>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:.6rem;margin:1.4rem 0 .5rem">
+      <h3 style="margin:0">Phasen im Detail</h3>
+      <span class="mono small muted">${done}/${tot} Schritte abgehakt</span>
+    </div>
+    <div class="bar" style="margin-bottom:1rem"><i style="width:${tot?done/tot*100:0}%"></i></div>
+
+    <div id="phase">${ablPhase(ablOffen)}</div>
+
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem">
+      <button class="btn" onclick="ablOffen=(ablOffen-1+ABL.length)%ABL.length;renderAblauf()">← Vorherige Phase</button>
+      <button class="btn primary" onclick="ablOffen=(ablOffen+1)%ABL.length;renderAblauf()">Nächste Phase →</button>
+      <button class="btn ghost sm" onclick="if(confirm('Alle Häkchen im Ablaufplan zurücksetzen?')){S.abl={};S.save();renderAblauf()}">Checkliste zurücksetzen</button>
+    </div>`;
+}
+function ablPhase(i){
+  const p = ABL[i];
+  return `
+  <div class="reader" style="border-left:3px solid ${ABLC[i]}">
+    <div class="readhead">
+      <div>
+        <div class="eyebrow">Phase ${i+1} von ${ABL.length} · typischer Zeitanteil ${p.anteil} % · Dauer ${p.dauer}</div>
+        <h2 style="margin:0">${p.p}</h2>
+        <p class="muted small" style="margin:.2rem 0 0">${p.kurz}</p>
+      </div>
+    </div>
+
+    <div class="note" style="border-color:${ABLC[i]}"><b>Ziel dieser Phase</b>${p.ziel}</div>
+
+    <h3>Schritte im Einzelnen</h3>
+    ${p.schritte.map((s2,j)=>{
+      const key = i+'-'+j, on = !!S.abl[key];
+      return `<div style="display:flex;gap:.7rem;padding:.65rem 0;border-bottom:1px solid var(--line)">
+        <button onclick="S.abl['${key}']=${!on};S.save();renderAblauf()" aria-pressed="${on}"
+          style="flex:none;width:26px;height:26px;border-radius:6px;cursor:pointer;margin-top:.1rem;
+                 border:1px solid ${on?ABLC[i]:'var(--line)'};background:${on?ABLC[i]:'transparent'};
+                 color:#08131a;font-weight:700;line-height:1">${on?'✓':''}</button>
+        <div style="flex:1">
+          <b style="${on?'opacity:.65':''}">${j+1}. ${s2[0]}</b>
+          <div class="small muted" style="margin-top:.15rem">${s2[1]}</div>
+        </div>
+      </div>`;}).join('')}
+
+    <div class="grid g2" style="margin-top:1.2rem">
+      <div>
+        <h4>Ergebnisse dieser Phase</h4>
+        <ul class="tight">${p.ergebnisse.map(e=>`<li>${e}</li>`).join('')}</ul>
+      </div>
+      <div>
+        <h4>Wer ist beteiligt</h4>
+        <ul class="tight">${p.beteiligte.map(e=>`<li>${e}</li>`).join('')}</ul>
+      </div>
+    </div>
+
+    <div class="note" style="border-color:var(--amber);background:rgba(245,183,78,.07)"><b>Meilenstein</b>${p.ms}</div>
+
+    <h4>Typische Fehler</h4>
+    <ul class="tight">${p.fehler.map(e=>`<li>${e}</li>`).join('')}</ul>
+
+    <div class="note exam"><b>Prüfungshinweis</b>${p.pruefung}</div>
+  </div>`;
+}
+
 /* ===================== FALLSTUDIEN-ANSICHT ===================== */
 let fsOffen = -1;
 function renderFaelle(){
@@ -3517,7 +4320,7 @@ function renderInfo(){
   $('#v-info').innerHTML = `
     <h2>Über diese App</h2>
     <div class="card">
-      <p>PM-Werkstatt bündelt den Prüfungsstoff zum Projektmanagement für Fachinformatiker Systemintegration: ${CH.length} Lernkapitel, ${Q.length} Multiple-Choice-Fragen, ${K.length} Karteikarten, ${OA.length} offene Aufgaben mit Musterlösung, ${FS.length} durchgerechnete Fallstudien, eine Formelsammlung, ${GL.length} Glossarbegriffe und sieben Rechner.</p>
+      <p>PM-Werkstatt bündelt den Prüfungsstoff zum Projektmanagement für Fachinformatiker Systemintegration: ${CH.length} Lernkapitel, ${Q.length} Multiple-Choice-Fragen, ${K.length} Karteikarten, ${OA.length} offene Aufgaben mit Musterlösung, ${FS.length} durchgerechnete Fallstudien, ein vollständiger Ablaufplan mit ${ABL.reduce((a,p)=>a+p.schritte.length,0)} erklärten Schritten, eine Formelsammlung, ${GL.length} Glossarbegriffe und sieben Rechner.</p>
       <h4>So arbeitest du am besten damit</h4>
       <ul class="tight">
         <li>Kapitel lesen und abhaken, danach direkt das Quiz zum passenden Themenbereich starten.</li>
@@ -3529,7 +4332,7 @@ function renderInfo(){
       <p class="small">Projektmanagement ist Bestandteil von Teil 1 der gestreckten Abschlussprüfung sowie des Prüfungsbereichs „Planen eines Softwareproduktes" bzw. der Projektarbeit in Teil 2. Die Inhalte orientieren sich am Rahmenlehrplan, an DIN 69901 und an gängiger Prüfungspraxis. Verbindlich sind allein die Vorgaben deiner zuständigen Kammer.</p>
       <h4>Datenspeicherung</h4>
       <p class="small">Lernfortschritt und Quizergebnisse liegen ausschließlich im Local Storage deines Browsers. Es werden keine Daten übertragen.</p>
-      <button class="btn sm" onclick="if(confirm('Wirklich allen Lernfortschritt löschen?')){localStorage.removeItem('pmw_read');localStorage.removeItem('pmw_quiz');S.read=[];S.quiz={};S.save();updateProgress();renderInfo();alert('Lernfortschritt zurückgesetzt.')}">Lernfortschritt zurücksetzen</button>
+      <button class="btn sm" onclick="if(confirm('Wirklich allen Lernfortschritt löschen?')){localStorage.removeItem('pmw_read');localStorage.removeItem('pmw_quiz');localStorage.removeItem('pmw_abl');S.read=[];S.quiz={};S.abl={};S.save();updateProgress();renderInfo();alert('Lernfortschritt zurückgesetzt.')}">Lernfortschritt zurücksetzen</button>
     </div>
     <div class="card">
       <h3>Zur Startseite hinzufügen</h3>
@@ -3539,7 +4342,7 @@ function renderInfo(){
 
 /* ===================== INIT ===================== */
 buildNav();
-renderStart(); renderLernen(); renderRechner(); renderQuiz(); renderKarten(); renderPruefung(); renderFaelle(); renderFormeln(); renderGlossar(); renderInfo();
+renderStart(); renderLernen(); renderRechner(); renderQuiz(); renderKarten(); renderPruefung(); renderAblauf(); renderFaelle(); renderFormeln(); renderGlossar(); renderInfo();
 updateProgress();
 
 /* Manifest zur Laufzeit einhängen (Single-File-fähig) */
