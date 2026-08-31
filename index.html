@@ -273,6 +273,7 @@ footer{border-top:1px solid var(--line);margin-top:2.5rem;padding-top:1.4rem;col
   <section class="view" id="v-quiz"></section>
   <section class="view" id="v-karten"></section>
   <section class="view" id="v-pruefung"></section>
+  <section class="view" id="v-faelle"></section>
   <section class="view" id="v-formeln"></section>
   <section class="view" id="v-glossar"></section>
   <section class="view" id="v-info"></section>
@@ -1524,6 +1525,158 @@ Werden drei Maßnahmen verlangt, werden auch nur die ersten drei bewertet. Mehr 
 <p>Rechne die Verfahren aktiv durch, statt sie nur zu lesen: ein Netzplan, eine Dreipunktschätzung, eine Nutzwertanalyse, eine Amortisationsrechnung und eine Zuschlagskalkulation pro Tag. Geh die Karteikarten täglich einmal komplett durch und nutze die Prüfungssimulation, um dich an das Zeitgefühl zu gewöhnen.</p>`}
 );
 
+CH.push(
+{t:'Von der Anforderung zum Arbeitspaket', sub:'Ein durchgehendes Beispiel über alle Planungsschritte', tag:'Planung', html:`
+<h3>Die Ausgangslage</h3>
+<p>Ein Handwerksbetrieb mit 45 Mitarbeitern meldet: „Unsere Monteure kommen unterwegs nicht an die Auftragsunterlagen. Das muss besser werden." Aus diesem Satz wird in fünf Schritten ein planbares Projekt.</p>
+
+<h3>Schritt 1 – Anforderung präzisieren</h3>
+<p>Der Satz des Kunden ist kein verwertbares Ziel. Im Anforderungsgespräch entsteht daraus:</p>
+<div class="tblwrap"><table>
+<tr><th>ID</th><th>Anforderung</th><th>Typ</th><th>Priorität</th></tr>
+<tr><td>A-01</td><td>Monteure können Auftragsunterlagen als PDF auf dem Diensthandy abrufen</td><td>funktional</td><td>Muss</td></tr>
+<tr><td>A-02</td><td>Der Zugriff ist nur nach Anmeldung mit zwei Faktoren möglich</td><td>funktional</td><td>Muss</td></tr>
+<tr><td>A-03</td><td>Ein Dokument öffnet bei Mobilfunkverbindung in unter 5 Sekunden</td><td>nichtfunktional</td><td>Soll</td></tr>
+<tr><td>A-04</td><td>Bei Geräteverlust lassen sich Unternehmensdaten aus der Ferne löschen</td><td>funktional</td><td>Muss</td></tr>
+<tr><td>A-05</td><td>Monteure können Rückmeldungen und Fotos zum Auftrag hochladen</td><td>funktional</td><td>Kann</td></tr>
+</table></div>
+<p><b>Nicht-Ziel:</b> Die Ablösung der bestehenden Auftragsverwaltung ist nicht Bestandteil des Projekts.</p>
+
+<h3>Schritt 2 – SMART-Ziel formulieren</h3>
+<div class="note"><b>Zielformulierung</b>
+Bis zum 30.06. sind alle 22 Monteure mit einem verwalteten Diensthandy ausgestattet, über das sie Auftragsunterlagen abrufen können. Der Zugriff erfolgt ausschließlich nach Zwei-Faktor-Anmeldung, verlorene Geräte lassen sich innerhalb von 15 Minuten sperren. Das Projektbudget beträgt 18.000 €.</div>
+
+<h3>Schritt 3 – Projektstrukturplan ableiten</h3>
+<pre class="mono small" style="background:#0b1520;border:1px solid var(--line);border-radius:8px;padding:.8rem;overflow-x:auto">1    Mobiler Dokumentenzugriff
+1.1  Analyse
+     1.1.1 Anforderungen mit Monteuren und Büro abstimmen
+     1.1.2 Mobilfunkabdeckung im Einsatzgebiet prüfen
+1.2  Konzept
+     1.2.1 Geräte- und Tarifauswahl (Nutzwertanalyse)
+     1.2.2 MDM-Lösung auswählen
+     1.2.3 Berechtigungs- und Sicherheitskonzept
+1.3  Beschaffung
+     1.3.1 Angebote einholen und vergleichen
+     1.3.2 Bestellung und Wareneingang
+1.4  Realisierung
+     1.4.1 MDM einrichten und Richtlinien konfigurieren
+     1.4.2 Pilot mit 3 Monteuren
+     1.4.3 Rollout der übrigen 19 Geräte
+1.5  Abschluss
+     1.5.1 Kurzschulung und Handzettel
+     1.5.2 Dokumentation und Übergabe an den Betrieb</pre>
+<p>Beachte die 100-Prozent-Regel: Die fünf Teilaufgaben ergeben zusammen genau den Projektumfang – nicht mehr, nicht weniger.</p>
+
+<h3>Schritt 4 – Arbeitspaket beschreiben</h3>
+<div class="calcbox small">
+<b>PSP-Code:</b> 1.4.2 · <b>Bezeichnung:</b> Pilot mit 3 Monteuren<br>
+<b>Ziel:</b> Nachweis, dass Anmeldung, Dokumentenabruf und Fernlöschung im realen Einsatz funktionieren<br>
+<b>Verantwortlich:</b> Systemadministrator<br>
+<b>Aufwand:</b> 12 Personenstunden<br>
+<b>Ressourcen:</b> 3 Geräte, MDM-Testrichtlinie, 3 Testkonten<br>
+<b>Vorgänger:</b> 1.4.1 MDM eingerichtet<br>
+<b>Dauer:</b> 5 Arbeitstage (Feldphase)<br>
+<b>Abnahmekriterium:</b> Alle drei Monteure rufen an fünf aufeinanderfolgenden Tagen Unterlagen ohne Störung ab; eine Testsperrung greift in unter 15 Minuten; das Protokoll ist unterschrieben.
+</div>
+
+<h3>Schritt 5 – Aufwand schätzen</h3>
+<p>Für das Ausrollen der Geräte bietet sich die <b>Multiplikatormethode</b> an: 19 Geräte × 0,75 h Erfahrungswert = 14,25 h. Für die unsichere Position „MDM einrichten" passt die <b>Dreipunktschätzung</b> besser:</p>
+<div class="calcbox small">O = 6 h, M = 10 h, P = 20 h<br>
+AE = (6 + 4·10 + 20) / 6 = 66 / 6 = <b>11 h</b><br>
+σ = (20 − 6) / 6 ≈ 2,33 h → mit 68 % Wahrscheinlichkeit zwischen 8,7 h und 13,3 h</div>
+<div class="note warn"><b>Der rote Faden</b>
+Anforderung → Ziel → PSP → Arbeitspaket → Schätzung → Termin- und Kostenplan. Wer eine Stufe überspringt, schätzt ins Blaue. Genau dieser Ablauf wird in der Prüfung und im Fachgespräch abgefragt.</div>`},
+
+{t:'Statusbericht und Berichtswesen', sub:'Mit vollständigem Musterbericht', tag:'Steuerung', html:`
+<h3>Wozu der Statusbericht dient</h3>
+<p>Er informiert den Auftraggeber knapp und regelmäßig über Lage, Abweichungen und Entscheidungsbedarf. Er ist kein Tätigkeitsnachweis. Faustregel: eine Seite, gleiche Struktur in jeder Ausgabe, damit Veränderungen sofort auffallen.</p>
+
+<h3>Die Ampelsystematik</h3>
+<div class="tblwrap"><table>
+<tr><th>Farbe</th><th>Bedeutung</th><th>Konsequenz</th></tr>
+<tr><td><b style="color:var(--ok)">Grün</b></td><td>im Plan, keine Abweichung über der Toleranz</td><td>keine Maßnahme nötig</td></tr>
+<tr><td><b style="color:var(--amber)">Gelb</b></td><td>Abweichung erkannt, wird im Projekt aufgefangen</td><td>Maßnahme benennen, Wirkung im nächsten Bericht prüfen</td></tr>
+<tr><td><b style="color:var(--red)">Rot</b></td><td>Ziel gefährdet, Projekt kann es nicht selbst lösen</td><td>Entscheidung des Lenkungsausschusses erforderlich</td></tr>
+</table></div>
+<p>Wichtig ist eine vorab vereinbarte Toleranz, etwa: gelb ab 5 % Abweichung, rot ab 10 %. Ohne Schwellenwerte wird die Ampel zur Stimmungsanzeige.</p>
+
+<h3>Musterbericht</h3>
+<div class="calcbox small">
+<b>Projekt:</b> Mobiler Dokumentenzugriff · <b>Berichtszeitraum:</b> KW 18 · <b>Projektleitung:</b> A. Beispiel<br><br>
+<b>Gesamtstatus:</b> <span style="color:var(--amber)">Gelb</span><br>
+Termine <span style="color:var(--amber)">gelb</span> · Kosten <span style="color:var(--ok)">grün</span> · Leistung/Qualität <span style="color:var(--ok)">grün</span><br><br>
+<b>Erreicht im Berichtszeitraum</b><br>
+· MDM-Mandant eingerichtet, Richtlinien für Verschlüsselung und Sperrbildschirm aktiv<br>
+· Pilotgeräte an drei Monteure ausgegeben, Feldphase gestartet<br><br>
+<b>Nächste Schritte</b><br>
+· Auswertung der Feldphase bis 12.05.<br>
+· Serienrollout ab KW 20, Kurzschulung parallel<br><br>
+<b>Abweichungen</b><br>
+· Meilenstein „Pilot abgeschlossen" verschiebt sich um 4 Arbeitstage. Ursache: Lieferverzug bei zwei Geräten.<br>
+· Maßnahme: Rollout-Reihenfolge getauscht, Standort Nord vorgezogen. Der Endtermin bleibt dadurch unverändert, der Gesamtpuffer sinkt von 8 auf 4 Tage.<br><br>
+<b>Kosten</b><br>
+· Budget 18.000 € · Ist 7.420 € · Fertigstellungsgrad 45 % · Prognose 17.600 €<br><br>
+<b>Top-Risiken</b><br>
+· Mobilfunkabdeckung im Einsatzgebiet Süd unklar (W 3 / S 4 = 12) – Messfahrt für KW 19 beauftragt<br>
+· Akzeptanz der Zwei-Faktor-Anmeldung (W 3 / S 2 = 6) – Kurzanleitung und Vor-Ort-Termin geplant<br><br>
+<b>Entscheidungsbedarf</b><br>
+· Keiner. Nächster Bericht: KW 20.
+</div>
+
+<h3>Was einen guten Bericht ausmacht</h3>
+<ul class="tight">
+<li>Jede Abweichung mit <b>Ursache, Maßnahme und Auswirkung</b> – die reine Meldung „vier Tage Verzug" ist wertlos.</li>
+<li>Zahlen statt Adjektive: Fertigstellungsgrad, Ist-Kosten, Prognose.</li>
+<li>Risiken mit Bewertung und laufender Maßnahme, nicht als Sammelliste.</li>
+<li>Entscheidungsbedarf ausdrücklich benennen oder ausdrücklich verneinen.</li>
+<li>Immer dieselbe Struktur und derselbe Rhythmus.</li>
+</ul>
+<div class="note exam"><b>Prüfungsaufgabe</b>
+Häufig wird verlangt, aus einer Fallbeschreibung einen Statusbericht zu entwerfen oder einen vorgelegten Bericht zu kritisieren. Typische Kritikpunkte: fehlende Ursachen, fehlende Auswirkung auf den Endtermin, keine Zahlen, Risiken ohne Bewertung, Ampel ohne Schwellenwert.</div>`},
+
+{t:'Testfälle, Testprotokoll und Abnahme', sub:'Mit ausformulierten Beispielen', tag:'Steuerung', html:`
+<h3>Ein Testfall besteht aus fünf Teilen</h3>
+<p>Vorbedingung, Eingabe bzw. Aktion, erwartetes Ergebnis, tatsächliches Ergebnis, Status. Fehlt das erwartete Ergebnis, ist der Testfall wertlos – er kann dann weder bestehen noch fehlschlagen.</p>
+
+<h3>Beispiel: Testfälle für den mobilen Dokumentenzugriff</h3>
+<div class="tblwrap"><table>
+<tr><th>ID</th><th>Vorbedingung</th><th>Aktion</th><th>Erwartetes Ergebnis</th><th>Bezug</th></tr>
+<tr><td>T-01</td><td>Gerät registriert, Benutzer angemeldet</td><td>Auftrag 4711 öffnen</td><td>PDF wird in unter 5 s vollständig angezeigt</td><td>A-01, A-03</td></tr>
+<tr><td>T-02</td><td>Gerät registriert, Benutzer abgemeldet</td><td>App ohne zweiten Faktor starten</td><td>Zugriff wird verweigert, Aufforderung zur Zwei-Faktor-Anmeldung</td><td>A-02</td></tr>
+<tr><td>T-03</td><td>Gerät als verloren gemeldet</td><td>Fernlöschung im MDM auslösen</td><td>Unternehmensdaten sind nach höchstens 15 min entfernt, private Daten bleiben unberührt</td><td>A-04</td></tr>
+<tr><td>T-04</td><td>Kein Mobilfunkempfang</td><td>Zuvor geöffnetes Dokument erneut aufrufen</td><td>Aussagekräftige Meldung, kein Absturz der App</td><td>A-03</td></tr>
+<tr><td>T-05</td><td>Benutzer ohne Berechtigung für Auftrag 4712</td><td>Auftrag 4712 öffnen</td><td>Zugriff wird verweigert und protokolliert</td><td>A-02</td></tr>
+</table></div>
+<div class="note"><b>Negativtests nicht vergessen</b>
+T-02, T-04 und T-05 prüfen ausdrücklich das Fehlverhalten. Wer nur den erfolgreichen Ablauf testet, findet genau die Fehler nicht, die im Betrieb wehtun.</div>
+
+<h3>Testabdeckung planen</h3>
+<p>Jede Anforderung braucht mindestens einen Testfall. Die Spalte „Bezug" stellt diese Nachverfolgbarkeit her: Anforderung A-05 taucht in der Tabelle nicht auf – ein Hinweis darauf, dass entweder ein Testfall fehlt oder die Kann-Anforderung bewusst zurückgestellt wurde. Genau solche Lücken deckt eine Anforderungs-Test-Matrix auf.</p>
+
+<h3>Fehler klassifizieren</h3>
+<div class="tblwrap"><table>
+<tr><th>Klasse</th><th>Beschreibung</th><th>Folge für die Abnahme</th></tr>
+<tr><td>A – kritisch</td><td>Kernfunktion nicht nutzbar, Sicherheitsmangel, Datenverlust</td><td>Abnahme wird verweigert</td></tr>
+<tr><td>B – wesentlich</td><td>Funktion eingeschränkt, Umgehung möglich</td><td>Abnahme unter Vorbehalt mit Frist</td></tr>
+<tr><td>C – gering</td><td>Schönheitsfehler, Beschriftung, Komfort</td><td>Abnahme, Behebung im laufenden Betrieb</td></tr>
+</table></div>
+
+<h3>Beispiel eines Abnahmeprotokolls</h3>
+<div class="calcbox small">
+<b>Projekt:</b> Mobiler Dokumentenzugriff · <b>Datum:</b> 24.06. · <b>Ort:</b> Betriebssitz<br>
+<b>Beteiligte:</b> Auftraggeber (Geschäftsführung), Projektleitung, Key User Montage<br><br>
+<b>Gegenstand:</b> 22 verwaltete Diensthandys, MDM-Richtlinien, Dokumentenzugriff, Anwenderdokumentation<br><br>
+<b>Prüfergebnis:</b> Testfälle T-01 bis T-05 durchgeführt, T-01 bis T-03 und T-05 bestanden.<br>
+<b>Festgestellte Mängel:</b><br>
+· M-1 (Klasse C): Bei fehlender Verbindung erscheint eine unklare Fehlermeldung (T-04). Behebung durch Anbieter bis 15.07.<br><br>
+<b>Ergebnis:</b> Abnahme erfolgt <b>unter Vorbehalt</b> der Behebung von M-1. Die Vergütung wird fällig, ein Einbehalt von 5 % bis zur Mängelbeseitigung wird vereinbart.<br><br>
+<b>Unterschriften:</b> Auftraggeber ______________ · Auftragnehmer ______________
+</div>
+
+<h3>Rechtliche Wirkung noch einmal kurz</h3>
+<p>Mit der Abnahme beim Werkvertrag wird die Vergütung fällig, die Gefahr geht auf den Auftraggeber über, die Beweislast für Mängel kehrt sich um und die zweijährige Verjährungsfrist beginnt. Deshalb ist das Protokoll kein Formalismus, sondern das wichtigste Dokument des Projektabschlusses.</p>`}
+);
+
 /* ===================== QUIZ ===================== */
 const Q = [
 {c:'Grundlagen',q:'Welches Merkmal gehört <b>nicht</b> zur Projektdefinition nach DIN 69901?',o:['Einmaligkeit der Bedingungen','Zeitliche Begrenzung','Regelmäßige Wiederholung des Ablaufs','Projektspezifische Organisation'],a:2,e:'Regelmäßige Wiederholung kennzeichnet einen Prozess, nicht ein Projekt. Projekte sind einmalig.'},
@@ -2073,10 +2226,428 @@ const FML = [
  ]}
 ];
 
+/* ===================== FALLSTUDIEN ===================== */
+const FS = [
+{t:'Windows-11-Rollout für 180 Clients', tag:'Migration', sub:'PSP, Aufwandsschätzung, Netzplan, Kalkulation, Risiken', html:`
+<h4>Ausgangslage</h4>
+<p>Ein Unternehmen mit zwei Standorten betreibt 180 Arbeitsplatzrechner unter Windows 10. Der Herstellersupport endet in acht Monaten. 150 Geräte erfüllen die Hardwareanforderungen, 30 müssen ersetzt werden. Es gibt vier Fachanwendungen, deren Kompatibilität ungeklärt ist.</p>
+
+<h4>Ziel nach SMART</h4>
+<div class="note">Bis zum 30.09. sind alle 180 Arbeitsplätze der Standorte Berlin und Hamburg auf Windows 11 migriert. Die Ausfallzeit je Arbeitsplatz überschreitet 90 Minuten nicht, alle vier Fachanwendungen sind lauffähig, das Budget von 62.000 € wird eingehalten.<br><b>Nicht-Ziel:</b> Die Migration der Server und die Ablösung der Fachanwendung „AltWare" sind nicht Bestandteil.</div>
+
+<h4>Projektstrukturplan (Auszug)</h4>
+<pre class="mono small" style="background:#0b1520;border:1px solid var(--line);border-radius:8px;padding:.8rem;overflow-x:auto">1    Client-Migration Windows 11
+1.1  Analyse        1.1.1 Hardwareinventur · 1.1.2 Anwendungskompatibilität · 1.1.3 Nutzerbefragung
+1.2  Konzept        1.2.1 Image und Autopilot-Profile · 1.2.2 Rollout-Kalender · 1.2.3 Rückfallkonzept
+1.3  Beschaffung    1.3.1 Angebote 30 Geräte · 1.3.2 Bestellung und Wareneingang
+1.4  Pilot          1.4.1 10 Geräte Pilotgruppe · 1.4.2 Auswertung und Nachsteuerung
+1.5  Rollout        1.5.1 Standort Berlin (120) · 1.5.2 Standort Hamburg (60)
+1.6  Abschluss      1.6.1 Schulung und Handzettel · 1.6.2 Übergabe Betrieb · 1.6.3 Altgeräteentsorgung</pre>
+
+<h4>Aufwandsschätzung</h4>
+<div class="tblwrap"><table>
+<tr><th>Position</th><th>Verfahren</th><th>Rechnung</th><th>Aufwand</th></tr>
+<tr><td>Migration Bestandsgeräte</td><td>Multiplikator</td><td>150 × 1,2 h</td><td>180 h</td></tr>
+<tr><td>Neugeräte einrichten</td><td>Multiplikator</td><td>30 × 1,8 h</td><td>54 h</td></tr>
+<tr><td>Kompatibilitätsanalyse</td><td>Dreipunkt</td><td>(12 + 4·20 + 44) / 6</td><td>22,7 h</td></tr>
+<tr><td>Image und Autopilot</td><td>Dreipunkt</td><td>(16 + 4·24 + 50) / 6</td><td>27 h</td></tr>
+<tr><td>Projektleitung und Doku</td><td>Erfahrungswert 15 %</td><td>0,15 × 283,7 h</td><td>42,6 h</td></tr>
+<tr><td><b>Summe</b></td><td></td><td></td><td><b>326,3 h</b></td></tr>
+</table></div>
+<p class="small muted">Zur Dreipunktschätzung der Kompatibilitätsanalyse: σ = (44 − 12) / 6 ≈ 5,3 h. Mit 68 % Wahrscheinlichkeit liegt der Aufwand zwischen 17,4 h und 28,0 h – der Puffer im Terminplan wird daran ausgerichtet.</p>
+
+<h4>Netzplan</h4>
+<div class="tblwrap"><table>
+<tr><th>Vorgang</th><th>Dauer (Tage)</th><th>Vorgänger</th><th>FAZ</th><th>FEZ</th><th>SAZ</th><th>SEZ</th><th>GP</th></tr>
+<tr style="color:var(--amber)"><td>A Inventur und Kompatibilität</td><td>10</td><td>–</td><td>0</td><td>10</td><td>0</td><td>10</td><td>0</td></tr>
+<tr style="color:var(--amber)"><td>B Image und Autopilot</td><td>8</td><td>A</td><td>10</td><td>18</td><td>10</td><td>18</td><td>0</td></tr>
+<tr><td>C Beschaffung 30 Geräte</td><td>15</td><td>A</td><td>10</td><td>25</td><td>13</td><td>28</td><td>3</td></tr>
+<tr style="color:var(--amber)"><td>D Pilot</td><td>10</td><td>B</td><td>18</td><td>28</td><td>18</td><td>28</td><td>0</td></tr>
+<tr style="color:var(--amber)"><td>E Rollout Berlin</td><td>20</td><td>C, D</td><td>28</td><td>48</td><td>28</td><td>48</td><td>0</td></tr>
+<tr style="color:var(--amber)"><td>F Rollout Hamburg</td><td>10</td><td>E</td><td>48</td><td>58</td><td>48</td><td>58</td><td>0</td></tr>
+<tr><td>G Schulung</td><td>5</td><td>D</td><td>28</td><td>33</td><td>53</td><td>58</td><td>25</td></tr>
+<tr style="color:var(--amber)"><td>H Übergabe Betrieb</td><td>3</td><td>F, G</td><td>58</td><td>61</td><td>58</td><td>61</td><td>0</td></tr>
+</table></div>
+<p><b>Projektdauer:</b> 61 Arbeitstage. <b>Kritischer Pfad:</b> A → B → D → E → F → H (gelb markiert).<br>
+Rechenkontrolle bei E: FAZ = max(FEZ von C = 25; FEZ von D = 28) = 28. Bei A rückwärts: SEZ = min(SAZ von B = 10; SAZ von C = 13) = 10.</p>
+<div class="note warn"><b>Was der Netzplan sofort zeigt</b>
+Die Beschaffung hat drei Tage Puffer, die Schulung 25 Tage. Verzögert sich dagegen der Pilot um nur einen Tag, verschiebt sich der Endtermin unmittelbar. Zusätzliche Aufmerksamkeit gehört deshalb auf A bis F, nicht auf die Schulung.</div>
+
+<h4>Kalkulation</h4>
+<div class="tblwrap"><table>
+<tr><td>30 Notebooks × 950 €</td><td class="mono">28.500 €</td></tr>
+<tr><td>Lizenzen und MDM-Erweiterung</td><td class="mono">3.200 €</td></tr>
+<tr><td>Interner Personalaufwand 326,3 h × 62 €</td><td class="mono">20.230 €</td></tr>
+<tr><td>Externe Unterstützung Imaging 20 h × 95 €</td><td class="mono">1.900 €</td></tr>
+<tr><td>Entsorgung und Datenlöschung 30 Altgeräte</td><td class="mono">450 €</td></tr>
+<tr><td><b>Zwischensumme</b></td><td class="mono"><b>54.280 €</b></td></tr>
+<tr><td>+ Risikozuschlag 12 %</td><td class="mono">6.514 €</td></tr>
+<tr><td><b>Gesamtkosten</b></td><td class="mono"><b>60.794 €</b></td></tr>
+</table></div>
+<p>Das Budget von 62.000 € wird eingehalten; die verbleibenden 1.206 € stehen als Reserve zur Verfügung.</p>
+
+<h4>Risiken</h4>
+<div class="tblwrap"><table>
+<tr><th>Risiko</th><th>W</th><th>S</th><th>W×S</th><th>Strategie und Maßnahme</th></tr>
+<tr><td>Fachanwendung nicht kompatibel</td><td>3</td><td>5</td><td><b style="color:var(--red)">15</b></td><td>vermindern – Kompatibilitätstest vor dem Pilot, Herstellerkontakt, notfalls Kompatibilitätsmodus</td></tr>
+<tr><td>Lieferverzug der 30 Neugeräte</td><td>3</td><td>3</td><td><b style="color:var(--amber)">9</b></td><td>übertragen – verbindlicher Liefertermin mit Vertragsstrafe, Puffer von 3 Tagen im Plan</td></tr>
+<tr><td>Datenverlust bei der Profilmigration</td><td>1</td><td>5</td><td><b style="color:var(--amber)">5</b></td><td>vermindern – verifiziertes Backup je Gerät, Stichprobenwiederherstellung</td></tr>
+<tr><td>Ausfallzeit über 90 min je Platz</td><td>2</td><td>3</td><td><b style="color:var(--amber)">6</b></td><td>vermindern – Vorbereitung der Geräte am Vortag, Tauschgerätepool</td></tr>
+</table></div>
+
+<h4>Meilensteine und Qualitätssicherung</h4>
+<ul class="tight">
+<li>M1 Kompatibilität geklärt (Tag 10) · M2 Pilot erfolgreich (Tag 28) · M3 Rollout abgeschlossen (Tag 58) · M4 Betriebsübergabe (Tag 61)</li>
+<li>Abnahmekriterium je Gerät: Anmeldung erfolgreich, alle vier Fachanwendungen starten, Drucker verbunden, Nutzerdaten vollständig – Checkliste vom Anwender gegengezeichnet</li>
+<li>Nach dem Rollout eine Woche Hypercare mit Vor-Ort-Präsenz je Standort</li>
+</ul>`},
+
+{t:'Servervirtualisierung und Konsolidierung', tag:'Infrastruktur', sub:'Nutzwertanalyse, Amortisation, PUE, Migrationsstrategie', html:`
+<h4>Ausgangslage</h4>
+<p>Im Serverraum stehen acht physische Server, drei davon sind über sieben Jahre alt. Die Auslastung liegt im Mittel bei 12 %. Jährlich fallen 4.800 € Energiekosten, 5.400 € Wartung und rechnerisch 6.000 € Ersatzbeschaffung an. Der Serverraum wird mit einer alten Klimaanlage gekühlt.</p>
+
+<h4>Alternativen und Nutzwertanalyse</h4>
+<div class="tblwrap"><table>
+<tr><th>Kriterium</th><th>Gewicht</th><th>A: Ersatz 1:1</th><th>B: Virtualisierung on-prem</th><th>C: Cloud (IaaS)</th></tr>
+<tr><td>Wirtschaftlichkeit über 5 Jahre</td><td>30 %</td><td>5 → 1,50</td><td>8 → 2,40</td><td>7 → 2,10</td></tr>
+<tr><td>Verfügbarkeit und Redundanz</td><td>25 %</td><td>4 → 1,00</td><td>8 → 2,00</td><td>9 → 2,25</td></tr>
+<tr><td>Datenhoheit und Compliance</td><td>20 %</td><td>9 → 1,80</td><td>9 → 1,80</td><td>5 → 1,00</td></tr>
+<tr><td>Vorhandenes Know-how</td><td>15 %</td><td>9 → 1,35</td><td>7 → 1,05</td><td>4 → 0,60</td></tr>
+<tr><td>Energieeffizienz</td><td>10 %</td><td>4 → 0,40</td><td>8 → 0,80</td><td>9 → 0,90</td></tr>
+<tr><td><b>Nutzwert</b></td><td></td><td><b>6,05</b></td><td><b style="color:var(--teal)">8,05</b></td><td><b>6,85</b></td></tr>
+</table></div>
+<p>Variante B gewinnt deutlich. Der Abstand zu C beträgt 1,20 Punkte, also rund 15 % – das Ergebnis ist stabil und kippt auch bei moderater Änderung der Gewichte nicht.</p>
+
+<h4>Wirtschaftlichkeit der gewählten Variante</h4>
+<div class="calcbox small">
+<b>Investition:</b> 2 Hosts à 9.800 € = 19.600 € · Storage 12.400 € · Lizenzen 5.600 € · Migrationsaufwand 60 h × 62 € = 3.720 € → <b>41.320 €</b><br><br>
+<b>Jährliche Einsparung:</b><br>
+Energie: 4.800 € → 1.900 € = 2.900 €<br>
+Wartung: 5.400 € → 2.400 € = 3.000 €<br>
+Ersatzbeschaffung anteilig: 6.000 € → 2.800 € = 3.200 €<br>
+Administrationsaufwand: 6 h/Monat weniger × 12 × 62 € = 4.464 €<br>
+<b>Summe: 13.564 € pro Jahr</b><br><br>
+<b>Amortisationszeit:</b> 41.320 € / 13.564 € = <b>3,05 Jahre</b><br>
+<b>Über 5 Jahre:</b> 5 × 13.564 € = 67.820 € Rückfluss − 41.320 € = <b>26.500 € Überschuss</b><br>
+<b>ROI über die Nutzungsdauer:</b> 26.500 / 41.320 × 100 = <b>64,1 %</b>
+</div>
+<p>Die Amortisation liegt mit gut drei Jahren deutlich unter der geplanten Nutzungsdauer von fünf Jahren. Die Investition ist wirtschaftlich.</p>
+
+<h4>Energie- und Nachhaltigkeitsargument</h4>
+<div class="calcbox small">
+Vorher: 200 kW Gesamtaufnahme des Serverraums, davon 80 kW IT-Last → PUE = 200 / 80 = <b>2,5</b><br>
+Nachher: 95 kW Gesamtaufnahme, davon 55 kW IT-Last → PUE = 95 / 55 ≈ <b>1,73</b><br>
+Der Rückgang entsteht durch weniger physische Systeme <i>und</i> die dadurch mögliche Reduktion der Kühlleistung.
+</div>
+
+<h4>Migrationsvorgehen</h4>
+<ul class="tight">
+<li><b>Strategie:</b> stufenweise Migration nach Priorität, beginnend mit unkritischen Testsystemen. Kein Big Bang, weil ein Fehler sonst alle Dienste beträfe.</li>
+<li>Je System: Snapshot vor der Konvertierung, Funktionstest nach Checkliste, Freigabe durch den Fachbereich, erst danach Abschaltung des Altsystems.</li>
+<li>Altsysteme bleiben 14 Tage ausgeschaltet, aber wiederherstellbar – definierter Rückfallweg.</li>
+<li>Wartungsfenster samstags 08:00 bis 14:00, Ankündigung zwei Wochen vorher.</li>
+</ul>
+
+<h4>Risiken</h4>
+<div class="tblwrap"><table>
+<tr><th>Risiko</th><th>W×S</th><th>Maßnahme</th></tr>
+<tr><td>Single Point of Failure durch Konsolidierung</td><td><b style="color:var(--red)">16</b></td><td>zwei Hosts im Cluster, redundante Netzteile und Netzwerkpfade, Ausfalltest vor Produktivsetzung</td></tr>
+<tr><td>Lizenzrechtliche Probleme bei Virtualisierung</td><td><b style="color:var(--amber)">9</b></td><td>Lizenzbedingungen je Anwendung vorab prüfen, Herstellerbestätigung einholen</td></tr>
+<tr><td>Performanceeinbruch bei gemeinsamem Storage</td><td><b style="color:var(--amber)">8</b></td><td>IOPS-Bedarf messen, Storage mit Reserve dimensionieren, Lasttest</td></tr>
+</table></div>`},
+
+{t:'Einführung eines Ticketsystems', tag:'Einführung', sub:'Make-or-Buy, TCO über 5 Jahre, Change Management', html:`
+<h4>Ausgangslage</h4>
+<p>Störungen werden per E-Mail und Zuruf gemeldet. Es gibt keine Übersicht über offene Fälle, keine Priorisierung und keine Auswertung. Der IT-Bereich besteht aus vier Personen und betreut 210 Anwender.</p>
+
+<h4>Zieldefinition</h4>
+<div class="note">Ab dem 01.10. werden alle IT-Störungen und Anfragen über ein Ticketsystem erfasst. 90 % der Meldungen erhalten innerhalb von zwei Stunden eine Eingangsbestätigung mit Priorität. Monatlich liegt eine Auswertung über Anzahl, Kategorie und Bearbeitungsdauer vor.<br><b>Nicht-Ziel:</b> Die Abbildung von Beschaffungs- und Genehmigungsprozessen erfolgt nicht in diesem Projekt.</div>
+
+<h4>Make-or-Buy</h4>
+<div class="tblwrap"><table>
+<tr><th>Kriterium</th><th>Eigenentwicklung</th><th>Open Source, selbst betrieben</th><th>SaaS</th></tr>
+<tr><td>Zeit bis zur Verfügbarkeit</td><td>6–9 Monate</td><td>6–8 Wochen</td><td>2–3 Wochen</td></tr>
+<tr><td>Lizenz-/Nutzungskosten</td><td>keine</td><td>keine</td><td>laufend je Agent</td></tr>
+<tr><td>Personalaufwand</td><td>sehr hoch</td><td>mittel</td><td>gering</td></tr>
+<tr><td>Datenhoheit</td><td>voll</td><td>voll</td><td>eingeschränkt, AV-Vertrag nötig</td></tr>
+<tr><td>Abhängigkeit</td><td>vom eigenen Entwickler</td><td>von der Community</td><td>vom Anbieter, Exit-Regelung nötig</td></tr>
+</table></div>
+<p>Die Eigenentwicklung scheidet aus: Sie bindet Kapazität, die im Betrieb fehlt, und erzeugt eine Abhängigkeit von einer einzelnen Person. Verglichen werden Open Source und SaaS.</p>
+
+<h4>TCO-Vergleich über fünf Jahre</h4>
+<div class="tblwrap"><table>
+<tr><th>Position</th><th>Open Source, selbst betrieben</th><th>SaaS</th></tr>
+<tr><td>Einführung und Konfiguration</td><td>80 h × 62 € = 4.960 €</td><td>30 h × 62 € = 1.860 €</td></tr>
+<tr><td>Server / Hosting über 5 Jahre</td><td>3.000 €</td><td>entfällt</td></tr>
+<tr><td>Nutzungsgebühren</td><td>0 €</td><td>4 Agenten × 39 € × 60 Monate = 9.360 €</td></tr>
+<tr><td>Betrieb und Updates</td><td>4 h/Monat × 60 × 62 € = 14.880 €</td><td>1 h/Monat × 60 × 62 € = 3.720 €</td></tr>
+<tr><td>Schulung</td><td>1.200 €</td><td>1.200 €</td></tr>
+<tr><td><b>TCO 5 Jahre</b></td><td><b>24.040 €</b></td><td><b style="color:var(--teal)">16.140 €</b></td></tr>
+</table></div>
+<p>Die SaaS-Variante ist über fünf Jahre rund 7.900 € günstiger, obwohl sie laufende Gebühren verursacht. Ausschlaggebend ist der Betriebsaufwand, nicht der Lizenzpreis. Voraussetzungen: AV-Vertrag nach Art. 28 DSGVO, Datenstandort in der EU, Exit-Regelung mit Datenexport.</p>
+
+<h4>Einführung begleiten</h4>
+<div class="tblwrap"><table>
+<tr><th>Woche</th><th>Maßnahme</th><th>Zweck</th></tr>
+<tr><td>−4</td><td>Ankündigung mit Nutzenargumentation an alle Anwender</td><td>„nicht wissen" auflösen</td></tr>
+<tr><td>−3</td><td>Key User je Abteilung benennen und schulen</td><td>Multiplikatoren aufbauen</td></tr>
+<tr><td>−1</td><td>Kurzschulung 30 min je Abteilung, einseitige Anleitung</td><td>„nicht können" auflösen</td></tr>
+<tr><td>0</td><td>Start, E-Mail-Kanal läuft parallel weiter</td><td>weicher Übergang</td></tr>
+<tr><td>+2</td><td>E-Mail-Meldungen werden automatisch in Tickets überführt</td><td>Gewöhnung ohne Zwang</td></tr>
+<tr><td>+6</td><td>Stichtag: Meldungen nur noch über das System, verbindlich durch die Geschäftsführung</td><td>„nicht dürfen" ausschließen</td></tr>
+<tr><td>+10</td><td>Auswertung und Rückmeldung an die Abteilungen</td><td>Nutzen belegen, Zustand stabilisieren</td></tr>
+</table></div>
+<div class="note warn"><b>Der entscheidende Punkt</b>
+Ein paralleler Meldekanal, der dauerhaft geduldet wird, verhindert die Einführung zuverlässig. Der Stichtag muss von der Leitung getragen und vorher kommuniziert werden – nicht von der IT allein verkündet.</div>
+
+<h4>Erfolgsmessung nach drei Monaten</h4>
+<ul class="tight">
+<li>Anteil der über das System gemeldeten Fälle (Ziel &gt; 95 %)</li>
+<li>Mittlere Zeit bis zur ersten Rückmeldung (Ziel &lt; 2 h)</li>
+<li>Anteil der Fälle mit korrekter Kategorie und Priorität</li>
+<li>Kurze Anwenderbefragung mit drei Fragen – Ergebnis fließt in die Lessons Learned</li>
+</ul>`},
+
+{t:'WLAN-Ausbau in einer Produktionshalle', tag:'Infrastruktur', sub:'Lastenheft, Ausschreibung, Messprotokoll, Abnahme', html:`
+<h4>Ausgangslage</h4>
+<p>Eine 3.200 m² große Produktionshalle mit Hochregallager soll WLAN erhalten. Genutzt werden 35 Handscanner und 12 Tablets. Die vorhandenen zwei Access Points im Bürotrakt decken die Halle nicht ab. Metallregale und Hallenkräne erschweren die Ausbreitung.</p>
+
+<h4>Anforderungen im Lastenheft</h4>
+<div class="tblwrap"><table>
+<tr><th>ID</th><th>Anforderung</th><th>Typ</th><th>Prio</th></tr>
+<tr><td>A-01</td><td>Flächendeckende Abdeckung der gesamten Halle inklusive Regalgassen</td><td>funktional</td><td>Muss</td></tr>
+<tr><td>A-02</td><td>Empfangsfeldstärke von mindestens −67 dBm an jedem Nutzungsort</td><td>nichtfunktional</td><td>Muss</td></tr>
+<tr><td>A-03</td><td>Unterbrechungsfreier Wechsel zwischen Access Points beim Durchfahren der Gassen</td><td>funktional</td><td>Muss</td></tr>
+<tr><td>A-04</td><td>Trennung von Produktions-, Verwaltungs- und Gästenetz über VLAN</td><td>funktional</td><td>Muss</td></tr>
+<tr><td>A-05</td><td>Anmeldung der Geräte über zertifikatsbasierte Authentifizierung</td><td>funktional</td><td>Soll</td></tr>
+<tr><td>A-06</td><td>Mindestens 60 gleichzeitige Clients ohne spürbaren Leistungsabfall</td><td>nichtfunktional</td><td>Soll</td></tr>
+</table></div>
+<p class="small muted">Beachte: A-02 und A-06 sind messbar formuliert. „Gute Abdeckung" oder „ausreichend schnell" wären nicht abnahmefähig.</p>
+
+<h4>Vorgehen</h4>
+<ol class="tight">
+<li><b>Ausleuchtungsmessung</b> vorab durch einen Dienstleister – ohne sie ist jede Planung Raten. Ergebnis: 14 Access Points, davon 6 in den Regalgassen mit gerichteten Antennen.</li>
+<li><b>Lastenheft</b> erstellen und an drei Anbieter versenden.</li>
+<li><b>Angebotsvergleich</b> über Bezugspreis und Nutzwertanalyse (Referenzen, Supportzeiten, Reaktionszeit, Garantiedauer).</li>
+<li><b>Installation</b> in zwei Wochenendfenstern, da während der Produktion keine Arbeiten über Kopf möglich sind.</li>
+<li><b>Abnahmemessung</b> im laufenden Betrieb, nicht in der leeren Halle – volle Regale verändern die Ausbreitung erheblich.</li>
+</ol>
+
+<h4>Kalkulation</h4>
+<div class="tblwrap"><table>
+<tr><td>14 Access Points × 480 €</td><td class="mono">6.720 €</td></tr>
+<tr><td>PoE-Switch 24 Port inkl. Montage</td><td class="mono">1.850 €</td></tr>
+<tr><td>Verkabelung 14 Strecken × 180 €</td><td class="mono">2.520 €</td></tr>
+<tr><td>Ausleuchtungs- und Abnahmemessung</td><td class="mono">2.400 €</td></tr>
+<tr><td>Controller-Lizenzen 3 Jahre</td><td class="mono">1.400 €</td></tr>
+<tr><td>Interner Aufwand 45 h × 62 €</td><td class="mono">2.790 €</td></tr>
+<tr><td><b>Zwischensumme</b></td><td class="mono"><b>17.680 €</b></td></tr>
+<tr><td>+ Risikozuschlag 15 % (bauliche Unwägbarkeiten)</td><td class="mono">2.652 €</td></tr>
+<tr><td><b>Gesamt netto</b></td><td class="mono"><b>20.332 €</b></td></tr>
+</table></div>
+
+<h4>Abnahme</h4>
+<ul class="tight">
+<li><b>Messprotokoll je Verkabelungsstrecke</b> mit nachgewiesener Leistungsklasse – Voraussetzung für die Gewährleistung</li>
+<li><b>Ausleuchtungsprotokoll</b> mit Heatmap, das A-02 an allen Nutzungsorten belegt</li>
+<li><b>Funktionstest Roaming</b>: Ein Scanner wird während einer laufenden Buchung durch drei Gassen bewegt, die Verbindung darf nicht abreißen (A-03)</li>
+<li><b>VLAN-Test</b>: Aus dem Gästenetz ist kein Zugriff auf Produktions- und Verwaltungsnetz möglich (A-04)</li>
+<li><b>Lasttest</b> mit 60 simulierten Clients (A-06)</li>
+</ul>
+<div class="note exam"><b>Was in der Prüfung zählt</b>
+Jede technische Maßnahme mit einem Schutzziel oder einer Anforderung begründen. „VLAN-Trennung, weil das Gästenetz keinen Zugriff auf Produktionsdaten haben darf – Schutzziel Vertraulichkeit" bringt Punkte. Die bloße Nennung „VLANs einrichten" nicht.</div>`},
+
+{t:'E-Mail-Migration nach Exchange Online', tag:'Migration', sub:'Migrationsstrategie, Cutover, Rollback, Datenschutz', html:`
+<h4>Ausgangslage</h4>
+<p>Ein lokaler Exchange-Server mit 120 Postfächern und 640 GB Datenvolumen läuft auf Hardware, deren Wartungsvertrag in fünf Monaten ausläuft. Die Anbindung des Standorts beträgt 200 Mbit/s symmetrisch.</p>
+
+<h4>Strategieauswahl</h4>
+<div class="tblwrap"><table>
+<tr><th>Variante</th><th>Beschreibung</th><th>Bewertung</th></tr>
+<tr><td>Cutover-Migration</td><td>alle Postfächer an einem Wochenende</td><td>kurz, aber hohes Risiko bei 120 Postfächern und 640 GB</td></tr>
+<tr><td><b>Hybride, stufenweise Migration</b></td><td>Postfächer gruppenweise, Koexistenz beider Systeme</td><td><b>gewählt</b> – Fehler betreffen nur eine Gruppe, Erfahrungen fließen ein</td></tr>
+<tr><td>Neuaufbau ohne Datenübernahme</td><td>nur neue Postfächer, Altdaten im Archiv</td><td>günstig, aber fachlich nicht akzeptabel</td></tr>
+</table></div>
+
+<h4>Übertragungsdauer abschätzen</h4>
+<div class="calcbox small">
+640 GB = 640 × 8.192 Mbit = 5.242.880 Mbit<br>
+Nutzbare Bandbreite realistisch 60 % von 200 Mbit/s = 120 Mbit/s<br>
+5.242.880 / 120 ≈ 43.690 s ≈ <b>12,1 Stunden reine Übertragungszeit</b><br>
+Verteilt auf 6 Gruppen à etwa 2 Stunden – jeweils außerhalb der Kernarbeitszeit.
+</div>
+<p>Diese Rechnung ist der Grund gegen den Cutover: Zwölf Stunden Übertragung plus Nacharbeit passen nicht sicher in ein Wochenendfenster, wenn etwas schiefgeht.</p>
+
+<h4>Ablauf je Migrationsgruppe</h4>
+<ol class="tight">
+<li>Anwender informieren (Termin, Auswirkung, Ansprechpartner) – drei Arbeitstage vorher</li>
+<li>Postfachgröße prüfen, Altdaten über 5 Jahre ins Archiv auslagern</li>
+<li>Vollständige Sicherung des Quellpostfachs, Prüfsumme dokumentieren</li>
+<li>Migration außerhalb der Kernzeit starten, Fortschritt protokollieren</li>
+<li>Funktionstest: Senden, Empfangen, Kalender, Freigaben, mobiles Gerät</li>
+<li>Freigabe durch den Anwender per Kurzprotokoll, erst dann nächste Gruppe</li>
+</ol>
+
+<h4>Rollback</h4>
+<div class="note warn"><b>Point of no Return</b>
+Solange der MX-Eintrag noch auf das lokale System zeigt und die Quellpostfächer unverändert bestehen, ist ein Rückfall möglich. Mit der Umstellung des MX-Eintrags und der ersten extern zugestellten Nachricht ins neue Postfach ist dieser Punkt überschritten. Er wird im Migrationsplan ausdrücklich als Entscheidungspunkt mit Uhrzeit und Verantwortlichem festgehalten.</div>
+
+<h4>Datenschutz und Mitbestimmung</h4>
+<ul class="tight">
+<li>AV-Vertrag nach Art. 28 DSGVO mit dem Anbieter, Unterauftragsverarbeiter prüfen</li>
+<li>Verzeichnis von Verarbeitungstätigkeiten aktualisieren, Datenstandort dokumentieren</li>
+<li>Aufbewahrungs- und Löschregeln festlegen (Speicherbegrenzung nach Art. 5 DSGVO)</li>
+<li>Auswertungsmöglichkeiten des Systems können eine Leistungskontrolle ermöglichen – Betriebsrat nach § 87 Abs. 1 Nr. 6 BetrVG beteiligen</li>
+</ul>
+
+<h4>Risiken</h4>
+<div class="tblwrap"><table>
+<tr><th>Risiko</th><th>W×S</th><th>Maßnahme</th></tr>
+<tr><td>Unvollständige Postfachmigration</td><td><b style="color:var(--red)">15</b></td><td>Elementzähler vor und nach der Migration vergleichen, Protokoll je Postfach</td></tr>
+<tr><td>Kalenderfreigaben gehen verloren</td><td><b style="color:var(--amber)">12</b></td><td>Freigaben vorab exportieren, nach Migration stichprobenartig prüfen</td></tr>
+<tr><td>Bandbreite reicht im Tagesbetrieb nicht</td><td><b style="color:var(--amber)">9</b></td><td>Migration nachts, Drosselung konfigurieren</td></tr>
+<tr><td>Anwender findet alte Mails nicht</td><td><b style="color:var(--amber)">6</b></td><td>Kurzanleitung zum Archiv, Hypercare in der ersten Woche</td></tr>
+</table></div>`},
+
+{t:'Backup- und Notfallkonzept', tag:'Betrieb', sub:'RTO, RPO, 3-2-1, Kostenvergleich, Wiederanlaufplan', html:`
+<h4>Ausgangslage</h4>
+<p>Die bestehende Sicherung läuft auf eine externe Festplatte, die im selben Raum liegt. Es gibt keine dokumentierte Wiederherstellung und keinen Test. Nach einem Ransomware-Vorfall bei einem Partnerunternehmen soll ein tragfähiges Konzept entstehen.</p>
+
+<h4>Schutzbedarf und Kennzahlen je System</h4>
+<div class="tblwrap"><table>
+<tr><th>System</th><th>Schutzbedarf Verfügbarkeit</th><th>RTO</th><th>RPO</th><th>Begründung</th></tr>
+<tr><td>Warenwirtschaft</td><td>hoch</td><td>4 h</td><td>1 h</td><td>Ohne das System steht der Versand still; jede Stunde Datenverlust bedeutet Nacherfassung</td></tr>
+<tr><td>Dateiablage</td><td>normal</td><td>8 h</td><td>24 h</td><td>Arbeit ist übergangsweise anders organisierbar</td></tr>
+<tr><td>Intranet</td><td>gering</td><td>3 Tage</td><td>7 Tage</td><td>rein informativ, kein Prozessbezug</td></tr>
+</table></div>
+<div class="note"><b>Die richtige Reihenfolge</b>
+Erst RTO und RPO mit dem Fachbereich festlegen, dann die technische Lösung ableiten. Wer mit der Technik beginnt, kauft entweder zu viel oder das Falsche.</div>
+
+<h4>Konzept nach der 3-2-1-Regel</h4>
+<ul class="tight">
+<li><b>3 Kopien:</b> Produktivdaten, lokale Sicherung, ausgelagerte Sicherung</li>
+<li><b>2 Medientypen:</b> Sicherungsserver mit Festplatten sowie Bandlaufwerk bzw. Cloud-Speicher</li>
+<li><b>1 Kopie außer Haus</b> und offline bzw. unveränderbar (immutable) – der entscheidende Schutz gegen Verschlüsselungsangriffe, weil Angreifer erreichbare Sicherungen mitverschlüsseln</li>
+<li>Ergänzend: getrennte Anmeldedaten für das Sicherungssystem, kein Domänenadministrator</li>
+</ul>
+
+<h4>Sicherungsplan</h4>
+<div class="tblwrap"><table>
+<tr><th>System</th><th>Verfahren</th><th>Häufigkeit</th><th>Aufbewahrung</th></tr>
+<tr><td>Warenwirtschaft</td><td>Vollsicherung sonntags, inkrementell stündlich</td><td>stündlich</td><td>14 Tage, Monatsstand 12 Monate</td></tr>
+<tr><td>Dateiablage</td><td>Vollsicherung sonntags, differenziell täglich</td><td>täglich</td><td>30 Tage</td></tr>
+<tr><td>Virtuelle Maschinen</td><td>Abbildsicherung</td><td>täglich</td><td>7 Tage</td></tr>
+</table></div>
+<p class="small muted">Zur Erinnerung: <b>inkrementell</b> sichert die Änderungen seit der letzten Sicherung – sparsam, aber die Wiederherstellung braucht alle Zwischenstände. <b>Differenziell</b> sichert die Änderungen seit der letzten Vollsicherung – größer, aber Wiederherstellung aus Voll- plus einer differenziellen Sicherung.</p>
+
+<h4>Kostenvergleich</h4>
+<div class="tblwrap"><table>
+<tr><th>Position</th><th>Variante Band</th><th>Variante Cloud-Sicherung</th></tr>
+<tr><td>Anschaffung</td><td>Laufwerk und Medien 6.400 €</td><td>0 €</td></tr>
+<tr><td>Laufende Kosten 5 Jahre</td><td>Medienersatz und Lagerung 2.000 €</td><td>3 TB × 9 € × 60 Monate = 1.620 €</td></tr>
+<tr><td>Bedienaufwand 5 Jahre</td><td>2 h/Monat × 60 × 62 € = 7.440 €</td><td>0,5 h/Monat × 60 × 62 € = 1.860 €</td></tr>
+<tr><td>Einrichtung</td><td>1.240 €</td><td>1.860 €</td></tr>
+<tr><td><b>TCO 5 Jahre</b></td><td><b>17.080 €</b></td><td><b style="color:var(--teal)">5.340 €</b></td></tr>
+</table></div>
+<p>Die Cloud-Variante ist deutlich günstiger, setzt aber ausreichende Bandbreite und einen AV-Vertrag voraus. Für die Wiederherstellung großer Datenmengen ist die Rückübertragungsdauer zu prüfen – sie geht direkt in das RTO ein.</p>
+
+<h4>Wiederanlaufplan und Test</h4>
+<ol class="tight">
+<li>Meldeweg und Alarmierung: wer entscheidet, wer informiert, in welcher Reihenfolge</li>
+<li>Wiederanlaufreihenfolge nach Abhängigkeiten: Verzeichnisdienst → Datenbank → Anwendung → Clientzugriff</li>
+<li><b>Halbjährlicher Wiederherstellungstest</b> mit Protokoll – eine Sicherung ohne getestete Rücksicherung ist keine Sicherung</li>
+<li>Dokumentation der tatsächlich gemessenen Wiederherstellungszeit und Abgleich mit dem vereinbarten RTO</li>
+<li>Notfallhandbuch offline verfügbar halten – ein PDF auf dem ausgefallenen Fileserver hilft niemandem</li>
+</ol>`}
+];
+
+/* ---- Erweiterung 3 ---- */
+Q.push(
+{c:'Planung',q:'Ein Rollout umfasst 150 Bestandsgeräte mit je 1,2 h und 30 Neugeräte mit je 1,8 h. Wie hoch ist der Gesamtaufwand?',o:['198 h','216 h','234 h','254 h'],a:2,e:'150 × 1,2 = 180 h, 30 × 1,8 = 54 h, zusammen 234 h. Zuschläge für Projektleitung kommen separat hinzu.'},
+{c:'Planung',q:'O = 12 h, M = 20 h, P = 44 h. Wie hoch ist der erwartete Aufwand?',o:['20,0 h','22,7 h','25,3 h','28,0 h'],a:1,e:'(12 + 80 + 44) / 6 = 136 / 6 ≈ 22,7 h. Die Standardabweichung beträgt (44 − 12) / 6 ≈ 5,3 h.'},
+{c:'Planung',q:'Ein Vorgang hat zwei Vorgänger mit FEZ 25 und FEZ 28. Wie hoch ist sein FAZ?',o:['25','26,5','28','53'],a:2,e:'Bei der Vorwärtsrechnung gilt das Maximum – der Vorgang kann erst starten, wenn beide Vorgänger fertig sind.'},
+{c:'Planung',q:'Ein Vorgang hat zwei Nachfolger mit SAZ 10 und SAZ 13. Wie hoch ist sein SEZ?',o:['10','11,5','13','23'],a:0,e:'Bei der Rückwärtsrechnung gilt das Minimum, damit kein Nachfolger verzögert wird.'},
+{c:'Planung',q:'Zwischensumme 54.280 €, Risikozuschlag 12 %. Wie hoch sind die Gesamtkosten?',o:['58.482 €','60.794 €','62.000 €','65.136 €'],a:1,e:'54.280 € × 1,12 = 60.793,60 €, gerundet 60.794 €.'},
+{c:'Planung',q:'Wozu dient ein prozentualer Zuschlag für Projektleitung und Dokumentation in der Schätzung?',o:['Zur Erhöhung des Gewinns','Um den nicht direkt produktiven, aber notwendigen Aufwand abzubilden','Um die Umsatzsteuer auszugleichen','Um Puffer im Netzplan zu erzeugen'],a:1,e:'Planung, Koordination, Berichte und Dokumentation verursachen realen Aufwand, typischerweise 10–20 % des Umsetzungsaufwands.'},
+{c:'Planung',q:'640 GB sollen über eine nutzbare Bandbreite von 120 Mbit/s übertragen werden. Wie lange dauert das etwa?',o:['etwa 1,5 Stunden','etwa 6 Stunden','etwa 12 Stunden','etwa 24 Stunden'],a:2,e:'640 GB × 8.192 = 5.242.880 Mbit; geteilt durch 120 Mbit/s ergibt rund 43.700 Sekunden, also gut 12 Stunden.'},
+
+{c:'Steuerung',q:'Was fehlt einem Statusbericht, der nur „vier Tage Verzug beim Meilenstein Pilot" meldet?',o:['Nichts, die Meldung genügt','Ursache, Maßnahme und Auswirkung auf den Endtermin','Die Unterschrift des Auftraggebers','Der Projektstrukturplan'],a:1,e:'Eine Abweichungsmeldung ohne Ursache, ergriffene Maßnahme und Auswirkung ist für den Auftraggeber nicht entscheidungsfähig.'},
+{c:'Steuerung',q:'Wann sollte ein Projekt im Statusbericht auf Rot gesetzt werden?',o:['Sobald irgendeine Abweichung auftritt','Wenn ein Ziel gefährdet ist und das Projekt es nicht selbst lösen kann','Wenn der Projektleiter im Urlaub ist','Nur am Projektende'],a:1,e:'Rot bedeutet Entscheidungsbedarf im Lenkungsausschuss. Gelb steht für Abweichungen, die das Projekt selbst auffängt.'},
+{c:'Steuerung',q:'Warum brauchen Ampelstatus vorab vereinbarte Schwellenwerte?',o:['Wegen der DSGVO','Weil die Ampel sonst nur die Stimmung des Projektleiters abbildet','Weil die DIN 69901 es fordert','Um Kosten zu sparen'],a:1,e:'Ohne definierte Toleranzen, etwa gelb ab 5 % und rot ab 10 % Abweichung, ist der Status nicht vergleichbar.'},
+{c:'Steuerung',q:'Welche Angabe macht einen Testfall überhaupt erst auswertbar?',o:['Der Name des Testers','Das erwartete Ergebnis','Die Uhrzeit','Die Systemversion'],a:1,e:'Ohne dokumentiertes Soll-Ergebnis kann ein Testfall weder bestehen noch fehlschlagen.'},
+{c:'Steuerung',q:'Was ist ein Negativtest?',o:['Ein Test, der immer fehlschlägt','Ein Test, der prüft, ob das System sich bei unzulässiger Eingabe korrekt verhält','Ein Test ohne Dokumentation','Ein Test durch den Auftraggeber'],a:1,e:'Beispiel: Zugriff ohne Berechtigung muss verweigert und protokolliert werden. Wer nur den Erfolgsfall testet, findet die kritischen Fehler nicht.'},
+{c:'Steuerung',q:'Ein kritischer Mangel der Klasse A wird bei der Abnahme festgestellt. Welche Folge hat das?',o:['Abnahme erfolgt uneingeschränkt','Abnahme unter Vorbehalt','Die Abnahme wird verweigert','Der Vertrag wird automatisch aufgelöst'],a:2,e:'Bei wesentlichen Mängeln – Kernfunktion nicht nutzbar, Sicherheitsmangel, Datenverlust – kann die Abnahme verweigert werden.'},
+{c:'Steuerung',q:'Wozu dient eine Anforderungs-Test-Matrix?',o:['Zur Kostenschätzung','Zum Nachweis, dass jede Anforderung durch mindestens einen Testfall abgedeckt ist','Zur Priorisierung des Backlogs','Zur Berechnung des Puffers'],a:1,e:'Sie stellt die Nachverfolgbarkeit zwischen Anforderungen und Tests her und deckt Abdeckungslücken auf.'},
+
+{c:'IT-Praxis',q:'Warum wird bei einer WLAN-Abnahme im laufenden Betrieb gemessen und nicht in der leeren Halle?',o:['Weil es schneller geht','Weil volle Regale und Personen die Funkausbreitung erheblich verändern','Weil die Anwender dabei sein müssen','Aus Kostengründen'],a:1,e:'Eine Messung in der leeren Halle liefert zu gute Werte und ist als Abnahmegrundlage untauglich.'},
+{c:'IT-Praxis',q:'Warum wird bei einer E-Mail-Migration mit 640 GB die stufenweise Variante bevorzugt?',o:['Weil sie günstiger ist','Weil die reine Übertragungszeit ein einzelnes Wochenendfenster sprengen kann','Weil sie keine Sicherung benötigt','Weil der Anbieter es vorschreibt'],a:1,e:'Zwölf Stunden reine Übertragung plus Nacharbeit und möglicher Rollback passen nicht sicher in ein Wartungsfenster.'},
+{c:'IT-Praxis',q:'Womit wird die Vollständigkeit einer Postfachmigration überprüft?',o:['Durch Nachfrage beim Anwender','Durch Vergleich der Elementzähler vor und nach der Migration','Durch die Dateigröße des Servers','Gar nicht, das übernimmt der Anbieter'],a:1,e:'Der Abgleich der Elementanzahl je Postfach mit Protokoll ist der übliche Nachweis.'},
+{c:'IT-Praxis',q:'Warum ist eine Konsolidierung auf zwei Virtualisierungshosts ein Risiko?',o:['Wegen der Lizenzkosten','Weil ein Ausfall viele Dienste gleichzeitig trifft – Single Point of Failure','Weil die Server langsamer werden','Weil die Garantie erlischt'],a:1,e:'Gegenmaßnahme: Clusterbetrieb, redundante Netzteile und Netzwerkpfade sowie ein Ausfalltest vor Produktivsetzung.'},
+{c:'IT-Praxis',q:'Ein Serverraum nimmt 200 kW auf, davon 80 kW IT-Last. Nach der Virtualisierung sind es 95 kW bei 55 kW IT-Last. Wie ändert sich der PUE?',o:['von 2,5 auf 1,73','von 1,73 auf 2,5','von 2,5 auf 2,0','er bleibt gleich'],a:0,e:'200/80 = 2,5 vorher, 95/55 ≈ 1,73 nachher. Der Gewinn entsteht durch weniger Systeme und geringere Kühlleistung.'},
+{c:'IT-Praxis',q:'Was unterscheidet eine inkrementelle von einer differenziellen Sicherung?',o:['Es gibt keinen Unterschied','Inkrementell sichert seit der letzten Sicherung, differenziell seit der letzten Vollsicherung','Inkrementell sichert immer alles','Differenziell läuft nur monatlich'],a:1,e:'Inkrementell ist sparsamer, benötigt zur Wiederherstellung aber alle Zwischenstände. Differenziell braucht nur Voll- plus eine differenzielle Sicherung.'},
+{c:'IT-Praxis',q:'Warum muss mindestens eine Sicherungskopie offline oder unveränderbar sein?',o:['Wegen der Aufbewahrungsfristen','Weil Verschlüsselungsangriffe erreichbare Sicherungen mitverschlüsseln','Weil Bänder billiger sind','Wegen der Bandbreite'],a:1,e:'Eine online erreichbare Sicherung bietet gegen Ransomware keinen zuverlässigen Schutz.'},
+{c:'IT-Praxis',q:'Was gilt für Sicherungen, die nie zurückgespielt wurden?',o:['Sie sind ausreichend','Sie sind kein belastbarer Schutz, weil die Wiederherstellbarkeit unbewiesen ist','Sie erfüllen automatisch das RTO','Sie ersetzen ein Notfallhandbuch'],a:1,e:'Ein regelmäßiger, protokollierter Wiederherstellungstest ist Pflichtbestandteil jedes Backup-Konzepts.'},
+{c:'IT-Praxis',q:'In welcher Reihenfolge werden Systeme nach einem Totalausfall wieder angefahren?',o:['Nach Anschaffungswert','Nach technischen Abhängigkeiten: Verzeichnisdienst, dann Datenbank, dann Anwendung','Alphabetisch','Nach Anzahl der Nutzer'],a:1,e:'Ohne funktionierenden Verzeichnisdienst und Datenbank nützt die wiederhergestellte Anwendung nichts.'},
+
+{c:'Ablauf',q:'Welche Aussage zum Nicht-Ziel im Beispielprojekt „mobiler Dokumentenzugriff" ist richtig?',o:['Nicht-Ziele erhöhen den Aufwand','Sie grenzen ab, was ausdrücklich nicht geliefert wird, und schützen vor Scope Creep','Sie ersetzen das Lastenheft','Sie sind nur bei agilen Projekten üblich'],a:1,e:'„Die Ablösung der Auftragsverwaltung ist nicht Bestandteil" verhindert spätere Erwartungskonflikte.'},
+{c:'Ablauf',q:'Welches Abnahmekriterium ist für ein Arbeitspaket brauchbar formuliert?',o:['Die Pilotphase war erfolgreich','Drei Monteure rufen an fünf Tagen ohne Störung Unterlagen ab, eine Testsperrung greift in unter 15 Minuten','Das MDM läuft gut','Die Anwender sind zufrieden'],a:1,e:'Nur die messbare Formulierung lässt sich objektiv prüfen und protokollieren.'},
+{c:'Methoden',q:'Welche Reihenfolge beschreibt den Weg von der Kundenaussage zum planbaren Projekt?',o:['Werkzeug, Termin, Ziel, Aufgaben','Anforderung, Ziel, PSP, Arbeitspaket, Schätzung, Termin- und Kostenplan','Kalkulation, Ziel, Netzplan, Anforderung','Risiko, Abnahme, Ziel, PSP'],a:1,e:'Wer eine Stufe überspringt, schätzt ohne Grundlage. Genau dieser Ablauf wird im Fachgespräch abgefragt.'},
+{c:'Prüfung',q:'Wie begründet man in der Prüfung eine technische Maßnahme richtig?',o:['Durch Nennung des Produktnamens','Durch Bezug auf ein Schutzziel oder eine konkrete Anforderung','Durch Angabe des Preises','Durch Verweis auf die Herstellerdokumentation'],a:1,e:'„VLAN-Trennung, damit das Gästenetz keinen Zugriff auf Produktionsdaten hat – Schutzziel Vertraulichkeit" bringt Punkte, die bloße Nennung nicht.'},
+{c:'Prüfung',q:'Welche Zahl gehört in eine Wirtschaftlichkeitsbetrachtung neben den Anschaffungskosten?',o:['Nur der Listenpreis','Die laufenden Kosten über die gesamte Nutzungsdauer','Die Anzahl der Projektmitarbeiter','Die Dauer des kritischen Pfads'],a:1,e:'Erst die TCO über gleiche Nutzungsdauer macht Alternativen vergleichbar – häufig entscheidet der Betriebsaufwand, nicht der Kaufpreis.'}
+);
+
+K.push(
+{c:'Planung',f:'Vom Kundensatz zum Projekt – fünf Schritte',b:'1. Anforderungen präzisieren und priorisieren · 2. SMART-Ziel mit Nicht-Zielen · 3. PSP ableiten · 4. Arbeitspakete beschreiben · 5. Aufwand schätzen. Erst danach Termin- und Kostenplan.'},
+{c:'Planung',f:'Inhalte einer Arbeitspaketbeschreibung (Beispiel)',b:'PSP-Code 1.4.2 · Bezeichnung „Pilot mit 3 Monteuren" · Ziel · Verantwortlicher · Aufwand 12 h · Ressourcen · Vorgänger · Dauer · messbares Abnahmekriterium.'},
+{c:'Planung',f:'Zuschlag für Projektleitung',b:'Planung, Koordination, Berichte und Dokumentation verursachen realen Aufwand. Üblicher Erfahrungswert: 10–20 % des Umsetzungsaufwands, zusätzlich zum Risikozuschlag auf die Kosten.'},
+{c:'Steuerung',f:'Aufbau eines Statusberichts',b:'Gesamtampel und Einzelampeln für Zeit/Kosten/Qualität · Erreichtes · nächste Schritte · Abweichungen mit Ursache, Maßnahme und Auswirkung · Kostenstand und Prognose · Top-Risiken · Entscheidungsbedarf.'},
+{c:'Steuerung',f:'Ampellogik mit Schwellenwerten',b:'Grün = im Plan · Gelb = Abweichung, wird im Projekt aufgefangen · Rot = Ziel gefährdet, Entscheidung des Lenkungsausschusses nötig. Schwellen vorab vereinbaren, etwa gelb ab 5 %, rot ab 10 %.'},
+{c:'Steuerung',f:'Bestandteile eines Testfalls',b:'Vorbedingung · Aktion oder Eingabe · erwartetes Ergebnis · tatsächliches Ergebnis · Status. Zusätzlich der Bezug zur Anforderung für die Nachverfolgbarkeit.'},
+{c:'Steuerung',f:'Fehlerklassen bei der Abnahme',b:'A kritisch (Kernfunktion, Sicherheit, Datenverlust) → Abnahme verweigern · B wesentlich (eingeschränkt, Umgehung möglich) → Abnahme unter Vorbehalt mit Frist · C gering → Abnahme, Behebung im Betrieb.'},
+{c:'Steuerung',f:'Negativtests',b:'Prüfen ausdrücklich unzulässige Eingaben und Fehlerfälle: Zugriff ohne Berechtigung, fehlende Verbindung, ungültige Daten. Ohne sie bleiben genau die kritischen Fehler unentdeckt.'},
+{c:'IT-Praxis',f:'Inkrementell vs. differenziell',b:'Inkrementell: Änderungen seit der letzten Sicherung – sparsam, Wiederherstellung braucht alle Zwischenstände. Differenziell: Änderungen seit der letzten Vollsicherung – größer, Wiederherstellung aus Voll plus einer Sicherung.'},
+{c:'IT-Praxis',f:'Übertragungsdauer abschätzen',b:'Datenmenge in Mbit umrechnen (GB × 8.192), durch die realistisch nutzbare Bandbreite teilen (etwa 60 % der Nennbandbreite). Ergebnis in Sekunden, dann in Stunden.'},
+{c:'IT-Praxis',f:'Wiederanlaufreihenfolge',b:'Verzeichnisdienst und DNS → Datenbank → Anwendung → Clientzugriff. Reihenfolge nach technischen Abhängigkeiten, nicht nach Wichtigkeit für einzelne Abteilungen.'},
+{c:'IT-Praxis',f:'Warum eine Kopie offline sein muss',b:'Verschlüsselungsangriffe erfassen alle erreichbaren Freigaben, auch Sicherungslaufwerke. Eine offline oder unveränderbar gehaltene Kopie ist der wirksamste Schutz – zusammen mit getrennten Anmeldedaten für das Sicherungssystem.'},
+{c:'Prüfung',f:'Maßnahmen richtig begründen',b:'Immer Maßnahme + Bezug: „VLAN-Trennung, damit das Gästenetz keinen Zugriff auf Produktionsdaten hat – Schutzziel Vertraulichkeit." Die Begründung bringt die Punkte, nicht die Aufzählung.'},
+{c:'Prüfung',f:'Abnahmekriterium formulieren',b:'Messbar, prüfbar, mit Grenzwert und Zeitbezug. Nicht „Pilot erfolgreich", sondern „drei Nutzer rufen an fünf aufeinanderfolgenden Tagen störungsfrei ab, Sperrung greift in unter 15 Minuten".'}
+);
+
+OA.push(
+{t:'Netzplan mit Puffern auswerten',
+ a:'Gegeben: A (10 Tage, kein Vorgänger), B (8 Tage, Vorgänger A), C (15 Tage, Vorgänger A), D (10 Tage, Vorgänger B), E (20 Tage, Vorgänger C und D). Berechnen Sie alle Zeitpunkte und Puffer, bestimmen Sie Projektdauer und kritischen Pfad. Der Einkauf meldet, dass sich Vorgang C um vier Tage verzögert. Beurteilen Sie die Auswirkung.',
+ l:'<b>Vorwärtsrechnung:</b> A: FAZ 0, FEZ 10 · B: FAZ 10, FEZ 18 · C: FAZ 10, FEZ 25 · D: FAZ 18, FEZ 28 · E: FAZ = max(25; 28) = 28, FEZ 48.<br><b>Projektdauer: 48 Tage.</b><br><b>Rückwärtsrechnung:</b> E: SEZ 48, SAZ 28 · D: SEZ 28, SAZ 18 · C: SEZ 28, SAZ 13 · B: SEZ 18, SAZ 10 · A: SEZ = min(10; 13) = 10, SAZ 0.<br><b>Gesamtpuffer:</b> A = 0 · B = 0 · C = 13 − 10 = 3 · D = 0 · E = 0.<br><b>Kritischer Pfad:</b> A → B → D → E.<br><br><b>Beurteilung der Verzögerung:</b> Vorgang C besitzt einen Gesamtpuffer von 3 Tagen. Eine Verzögerung um 4 Tage überschreitet diesen Puffer um einen Tag. C endet dann am Tag 29 statt 25, wodurch der Nachfolger E frühestens am Tag 29 starten kann. Der Endtermin verschiebt sich damit von Tag 48 auf Tag 49, und C wird selbst kritisch.<br><b>Maßnahme:</b> Da nur ein Tag fehlt, genügt eine kleine Beschleunigung – etwa Teillieferung vorziehen oder E teilweise vorbereitend starten (Fast Tracking). Eine Eskalation ist nicht erforderlich; die Abweichung wird im Statusbericht als gelb mit Ursache, Maßnahme und Auswirkung ausgewiesen.'},
+{t:'Statusbericht kritisieren',
+ a:'Ein Statusbericht enthält: „Status: gelb. Das Projekt läuft weitgehend nach Plan. Es gab einige Verzögerungen, die wir im Blick haben. Die Kosten sind okay. Risiken bestehen wie bekannt. Nächste Schritte: weitermachen." Nennen Sie fünf Mängel und formulieren Sie zwei Passagen richtig.',
+ l:'<b>Mängel:</b><br>1. Keine Ursache für die Verzögerung genannt – der Auftraggeber kann nicht beurteilen, ob eine Maßnahme wirkt.<br>2. Keine Auswirkung auf den Endtermin angegeben.<br>3. Keine Zahlen: Fertigstellungsgrad, Ist-Kosten und Prognose fehlen; „okay" ist keine Aussage.<br>4. Risiken ohne Bewertung, ohne Maßnahme und ohne Verantwortlichen; „wie bekannt" setzt Kenntnis voraus, die der Leser nicht haben muss.<br>5. Nächste Schritte sind unkonkret und ohne Termin; außerdem fehlt die Angabe, ob Entscheidungsbedarf besteht.<br>Ergänzend: Der Ampelstatus ist ohne vereinbarte Schwellenwerte nicht nachvollziehbar.<br><br><b>Richtig formuliert:</b><br><i>Abweichung:</i> „Der Meilenstein Pilot verschiebt sich um vier Arbeitstage. Ursache ist ein Lieferverzug bei zwei Testgeräten. Maßnahme: Die Rollout-Reihenfolge wurde getauscht und Standort Nord vorgezogen. Der Endtermin bleibt unverändert, der Gesamtpuffer sinkt von 8 auf 4 Tage."<br><i>Kosten:</i> „Budget 18.000 €, Ist-Kosten 7.420 €, Fertigstellungsgrad 45 %, Prognose bis Projektende 17.600 €. Status grün, da die Abweichung unter der vereinbarten Toleranz von 5 % liegt."'},
+{t:'Testfälle entwerfen',
+ a:'Für ein neues Selbstbedienungsportal gilt die Anforderung: „Mitarbeiter können ihr Kennwort nach Anmeldung mit zwei Faktoren selbst zurücksetzen. Ein Zurücksetzen ist höchstens dreimal pro Tag zulässig." Entwerfen Sie vier Testfälle, darunter mindestens zwei Negativtests, und geben Sie je Testfall das erwartete Ergebnis an.',
+ l:'<b>T-01 (Positivtest):</b> Vorbedingung: Mitarbeiter ist mit zwei Faktoren angemeldet, heute noch kein Zurücksetzen erfolgt. Aktion: Kennwort zurücksetzen und neues Kennwort vergeben. Erwartetes Ergebnis: Vorgang erfolgreich, Anmeldung mit dem neuen Kennwort möglich, Vorgang wird protokolliert.<br><b>T-02 (Negativtest, Zwei-Faktor):</b> Vorbedingung: Mitarbeiter ist nur mit dem ersten Faktor angemeldet. Aktion: Kennwortzurücksetzung aufrufen. Erwartetes Ergebnis: Funktion wird nicht ausgeführt, Aufforderung zur Bestätigung des zweiten Faktors, kein Kennwortwechsel.<br><b>T-03 (Negativtest, Grenzwert):</b> Vorbedingung: Mitarbeiter hat heute bereits dreimal zurückgesetzt. Aktion: vierter Versuch. Erwartetes Ergebnis: Vorgang wird abgelehnt, verständliche Meldung mit Hinweis auf die Tagesgrenze, Ereignis wird protokolliert.<br><b>T-04 (Grenzwerttest positiv):</b> Vorbedingung: Mitarbeiter hat heute zweimal zurückgesetzt. Aktion: dritter Versuch. Erwartetes Ergebnis: Vorgang wird ausgeführt, da die Grenze „höchstens dreimal" erst danach erreicht ist.<br><br><b>Hinweis zur Bewertung:</b> T-03 und T-04 prüfen gemeinsam den Grenzwert von beiden Seiten. Grenzwertbetrachtung ist die wirksamste Testtechnik bei zahlenmäßigen Vorgaben, weil dort die meisten Programmierfehler liegen.'},
+{t:'Wirtschaftlichkeit einer Konsolidierung',
+ a:'Acht physische Server sollen auf zwei Virtualisierungshosts konsolidiert werden. Investition: 2 Hosts à 9.800 €, Storage 12.400 €, Lizenzen 5.600 €, Migrationsaufwand 60 Stunden zu 62 €/h. Jährliche Einsparungen: Energie 2.900 €, Wartung 3.000 €, anteilige Ersatzbeschaffung 3.200 €, Administration 6 Stunden pro Monat zu 62 €/h. Berechnen Sie Investition, jährlichen Rückfluss, Amortisationszeit und ROI über fünf Jahre.',
+ l:'<b>Investition:</b> 2 × 9.800 € = 19.600 € + 12.400 € + 5.600 € + (60 h × 62 € = 3.720 €) = <b>41.320 €</b><br><b>Jährlicher Rückfluss:</b> 2.900 € + 3.000 € + 3.200 € + (6 h × 12 × 62 € = 4.464 €) = <b>13.564 €</b><br><b>Amortisationszeit:</b> 41.320 € / 13.564 € = <b>3,05 Jahre</b>, also rund 3 Jahre und 1 Monat.<br><b>Rückfluss über 5 Jahre:</b> 5 × 13.564 € = 67.820 €<br><b>Überschuss:</b> 67.820 € − 41.320 € = <b>26.500 €</b><br><b>ROI:</b> 26.500 € / 41.320 € × 100 = <b>64,1 %</b><br><br><b>Beurteilung:</b> Die Amortisation liegt deutlich unter der Nutzungsdauer von fünf Jahren, die Investition ist wirtschaftlich. Der größte Einzelposten der Einsparung ist mit 4.464 € der reduzierte Administrationsaufwand – nicht die Energie. Nicht monetär bewertet, aber ergänzend anzuführen: bessere Verfügbarkeit durch Clusterbetrieb, schnellere Bereitstellung neuer Systeme und der gesunkene PUE. Als Risiko ist der Single Point of Failure zu benennen und durch Clusterbetrieb mit redundanten Pfaden zu adressieren.'}
+);
+
+GL.push(
+['Anforderungs-Test-Matrix','Gegenüberstellung von Anforderungen und Testfällen zum Nachweis vollständiger Testabdeckung.'],
+['Cutover','Umstellung auf das neue System zu einem festgelegten Zeitpunkt, häufig mit engem Zeitfenster.'],
+['Differenzielle Sicherung','Sicherung aller Änderungen seit der letzten Vollsicherung.'],
+['Fehlerklasse','Einstufung eines Mangels nach Schwere (A kritisch, B wesentlich, C gering) mit Folge für die Abnahme.'],
+['Grenzwerttest','Testtechnik, die Werte unmittelbar an, unter und über einer zahlenmäßigen Grenze prüft.'],
+['Heatmap','Grafische Darstellung der gemessenen Funkfeldstärke zur Beurteilung der WLAN-Ausleuchtung.'],
+['Immutable Backup','Sicherung, die für einen festgelegten Zeitraum nicht verändert oder gelöscht werden kann.'],
+['Inkrementelle Sicherung','Sicherung aller Änderungen seit der letzten Sicherung beliebiger Art.'],
+['Negativtest','Testfall, der das Verhalten bei unzulässiger Eingabe oder im Fehlerfall prüft.'],
+['Point of no Return','Zeitpunkt einer Umstellung, ab dem ein Rollback nicht mehr möglich ist.'],
+['Statusbericht','Regelmäßiger, kurzer Bericht an den Auftraggeber über Lage, Abweichungen und Entscheidungsbedarf.'],
+['Toleranz','Vorab vereinbarter Schwellenwert, ab dem eine Abweichung als gelb oder rot gemeldet wird.'],
+['Wiederanlaufplan','Dokumentierte Reihenfolge und Zuständigkeit für den Wiederanlauf nach einem Ausfall.']
+);
+
 /* ===================== NAVIGATION ===================== */
 const VIEWS = [
  ['start','Start'],['lernen','Lernen'],['rechner','Rechner'],['quiz','Quiz'],
- ['karten','Karteikarten'],['pruefung','Prüfung'],['formeln','Formeln'],['glossar','Glossar'],['info','Info']
+ ['karten','Karteikarten'],['faelle','Fallstudien'],['pruefung','Prüfung'],['formeln','Formeln'],['glossar','Glossar'],['info','Info']
 ];
 function buildNav(){
   $('#nav').innerHTML = VIEWS.map(([id,label]) =>
@@ -2093,6 +2664,7 @@ function go(id){
   if(id==='lernen') renderLernen();
   if(id==='karten') renderKarten();
   if(id==='rechner') renderRechner();
+  if(id==='faelle') renderFaelle();
 }
 
 /* ===================== FORTSCHRITT ===================== */
@@ -2158,6 +2730,7 @@ function renderStart(){
         <button class="btn sm" onclick="go('rechner')">Netzplan rechnen</button>
         <button class="btn sm" onclick="go('quiz')">Quiz starten</button>
         <button class="btn sm" onclick="go('karten')">Karteikarten</button>
+        <button class="btn sm" onclick="go('faelle')">Fallstudien</button>
         <button class="btn sm" onclick="go('formeln')">Formelsammlung</button>
         <button class="btn sm" onclick="go('glossar')">Glossar</button>
       </div>
@@ -2860,6 +3433,45 @@ function finishEx(){
   window.scrollTo({top:0,behavior:'instant'});
 }
 
+/* ===================== FALLSTUDIEN-ANSICHT ===================== */
+let fsOffen = -1;
+function renderFaelle(){
+  $('#v-faelle').innerHTML = `
+    <h2>Fallstudien</h2>
+    <p class="muted small">Sechs vollständig durchgerechnete Projekte – von der Ausgangslage über Schätzung, Netzplan und Kalkulation bis zu Risiken und Abnahme. Ideal zum Nachvollziehen der Rechenwege und als Vorlage für den eigenen betrieblichen Auftrag.</p>
+    <div class="chaplist" style="margin-top:1rem">
+      ${FS.map((f,i)=>`
+        <button class="chap" onclick="openFall(${i})">
+          <span class="chap-no">${String(i+1).padStart(2,'0')}</span>
+          <span class="chap-body"><b>${f.t}</b><small>${f.sub}</small></span>
+          <span class="pill teal">${f.tag}</span>
+        </button>`).join('')}
+    </div>`;
+}
+function openFall(i){
+  const f = FS[i];
+  $('#v-faelle').innerHTML = `
+    <button class="btn sm ghost" onclick="renderFaelle()" style="margin-bottom:.9rem">← Zurück zur Übersicht</button>
+    <div class="reader">
+      <div class="readhead">
+        <div>
+          <div class="eyebrow">Fallstudie ${String(i+1).padStart(2,'0')} · ${f.tag}</div>
+          <h2 style="margin:0">${f.t}</h2>
+          <p class="muted small" style="margin:.2rem 0 0">${f.sub}</p>
+        </div>
+      </div>
+      ${f.html}
+      <hr>
+      <div style="display:flex;flex-wrap:wrap;gap:.6rem">
+        ${i+1<FS.length?`<button class="btn primary" onclick="openFall(${i+1})">Nächste Fallstudie →</button>`:''}
+        <button class="btn sm ghost" onclick="go('rechner')">Zahlen selbst nachrechnen</button>
+      </div>
+    </div>`;
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v==='faelle'));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id==='v-faelle'));
+  window.scrollTo({top:0,behavior:'instant'});
+}
+
 /* ===================== FORMELN ===================== */
 function renderFormeln(){
   $('#v-formeln').innerHTML = `
@@ -2905,7 +3517,7 @@ function renderInfo(){
   $('#v-info').innerHTML = `
     <h2>Über diese App</h2>
     <div class="card">
-      <p>PM-Werkstatt bündelt den Prüfungsstoff zum Projektmanagement für Fachinformatiker Systemintegration: ${CH.length} Lernkapitel, ${Q.length} Multiple-Choice-Fragen, ${K.length} Karteikarten, ${OA.length} offene Aufgaben mit Musterlösung, eine Formelsammlung, ${GL.length} Glossarbegriffe und sieben Rechner.</p>
+      <p>PM-Werkstatt bündelt den Prüfungsstoff zum Projektmanagement für Fachinformatiker Systemintegration: ${CH.length} Lernkapitel, ${Q.length} Multiple-Choice-Fragen, ${K.length} Karteikarten, ${OA.length} offene Aufgaben mit Musterlösung, ${FS.length} durchgerechnete Fallstudien, eine Formelsammlung, ${GL.length} Glossarbegriffe und sieben Rechner.</p>
       <h4>So arbeitest du am besten damit</h4>
       <ul class="tight">
         <li>Kapitel lesen und abhaken, danach direkt das Quiz zum passenden Themenbereich starten.</li>
@@ -2927,7 +3539,7 @@ function renderInfo(){
 
 /* ===================== INIT ===================== */
 buildNav();
-renderStart(); renderLernen(); renderRechner(); renderQuiz(); renderKarten(); renderPruefung(); renderFormeln(); renderGlossar(); renderInfo();
+renderStart(); renderLernen(); renderRechner(); renderQuiz(); renderKarten(); renderPruefung(); renderFaelle(); renderFormeln(); renderGlossar(); renderInfo();
 updateProgress();
 
 /* Manifest zur Laufzeit einhängen (Single-File-fähig) */
