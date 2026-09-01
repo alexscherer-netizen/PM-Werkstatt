@@ -262,6 +262,12 @@ footer{border-top:1px solid var(--line);margin-top:2.5rem;padding-top:1.4rem;col
 .npn-mid span{display:block;text-align:center;font-family:var(--mono);font-size:.76rem;padding:.2rem 0;color:var(--amber)}
 .npn-mid input{border:0;border-radius:0;background:transparent;padding:.2rem 0;text-align:center;font-family:var(--mono);font-size:.76rem;width:100%}
 .npn-mid input:focus{background:rgba(45,212,191,.1)}
+
+.npn-val{width:52px;text-align:center;font-family:var(--mono);font-size:.78rem;color:var(--ink);padding:.16rem 0;background:#0b1520;border:1px solid var(--line);border-radius:4px}
+.npn-box.krit{border-color:var(--amber)}
+.npn-box.krit .npn-name{border-bottom-color:var(--amber);color:var(--amber)}
+.npn-box.krit .npn-mid>*{border-right-color:var(--amber)}
+.npn-puf{color:var(--ink-dim)!important}
 </style>
 </head>
 <body>
@@ -3627,7 +3633,12 @@ function runNetz(){
   });
   const krit = order.filter(i=>map[i].gp===0);
   const max = dauer || 1;
+  const sol = npSolve(rows);
   $('#npOut').innerHTML = `
+  <div class="calcbox">
+    <div class="eyebrow">Netzplan als Vorgangsknotendiagramm</div>
+    ${npDiagrammStatisch(rows, sol)}
+  </div>
   <div class="calcbox">
     <div class="tblwrap"><table>
       <tr><th>Vorgang</th><th>D</th><th>FAZ</th><th>FEZ</th><th>SAZ</th><th>SEZ</th><th>GP</th><th>FP</th></tr>
@@ -4225,6 +4236,48 @@ function npuTipp(){
                       : `<b>${ziel.id}</b> hat keinen Nachfolger. Der freie Puffer ist Projektdauer minus eigener FEZ.`
   };
   $('#npuOut').innerHTML = `<div class="note"><b>Nächster Schritt</b>${texte[ziel.f]}</div>`;
+}
+
+/* Vorgangsknotendiagramm als Ergebnisdarstellung (schreibgeschützt) */
+function npDiagrammStatisch(rows, sol){
+  const lay = npLayout(sol);
+  const pfeile = [];
+  rows.forEach(r=>{
+    (String(r.v||'').split(',').map(x=>x.trim()).filter(Boolean)).forEach(p=>{
+      const a = lay.pos[p], b = lay.pos[r.id]; if(!a||!b) return;
+      const kritisch = sol.map[p] && sol.map[r.id] && sol.map[p].gp===0 && sol.map[r.id].gp===0;
+      const x1 = a.x + NPD.W, y1 = a.y + NPD.H/2, x2 = b.x - 6, y2 = b.y + NPD.H/2;
+      const mx = (x1 + x2) / 2;
+      pfeile.push(`<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" fill="none"
+        stroke="${kritisch?'#f5b74e':'#4a6b8a'}" stroke-width="${kritisch?2.2:1.6}" marker-end="url(#npArrowS${kritisch?'K':''})"/>`);
+    });
+  });
+  return `
+  <div class="npwrap">
+    <div class="npcanvas" style="width:${lay.breite}px;height:${lay.hoehe}px">
+      <svg width="${lay.breite}" height="${lay.hoehe}" style="position:absolute;inset:0">
+        <defs>
+          <marker id="npArrowS" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 9 3.5, 0 7" fill="#4a6b8a"/></marker>
+          <marker id="npArrowSK" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 9 3.5, 0 7" fill="#f5b74e"/></marker>
+        </defs>
+        ${pfeile.join('')}
+      </svg>
+      ${rows.map(r=>{ const p=lay.pos[r.id], v=sol.map[r.id]; if(!p||!v) return '';
+        const k = v.gp===0;
+        return `
+        <div class="npnode" style="left:${p.x}px;top:${p.y}px">
+          <div class="npn-out"><span class="npn-val">${v.faz}</span><span class="npn-val">${v.fez}</span></div>
+          <div class="npn-box${k?' krit':''}">
+            <div class="npn-name" title="${esc(r.n)}"><b>${esc(r.id)}</b> ${esc(r.n)}</div>
+            <div class="npn-mid">
+              <span>${v.d}</span><span class="${k?'':'npn-puf'}">${v.gp}</span><span class="${k?'':'npn-puf'}">${v.fp}</span>
+            </div>
+          </div>
+          <div class="npn-out"><span class="npn-val">${v.saz}</span><span class="npn-val">${v.sez}</span></div>
+        </div>`}).join('')}
+    </div>
+  </div>
+  <p class="small muted" style="margin:.4rem 0 0">Gelb umrandet und gelb verbunden: der kritische Pfad (Gesamtpuffer 0). Knotenaufbau oben FAZ und FEZ, Mitte Dauer, GP und FP, unten SAZ und SEZ.</p>`;
 }
 
 /* ===================== TRAINER-RAHMEN ===================== */
