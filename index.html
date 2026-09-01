@@ -3546,16 +3546,23 @@ function toggleRead(i){
 
 /* ===================== RECHNER ===================== */
 let calcTab = 'netz';
-const CALCS = [['netz','Netzplan'],['npu','Netzplan-Training'],['pert','Dreipunkt'],['nwa','Nutzwertanalyse'],['wirt','Wirtschaftlichkeit'],['kalk','Kalkulation'],['kap','Kapazität'],['risk','Risikomatrix']];
+const CALCS = [['netz','Netzplan'],['pert','Dreipunkt'],['nwa','Nutzwertanalyse'],['wirt','Wirtschaftlichkeit'],['kalk','Kalkulation'],['kap','Kapazität'],['risk','Risikomatrix']];
+let calcMode = 'rechner';
+const CALCFN  = {netz:()=>calcNetz(), pert:()=>calcPert(), nwa:()=>calcNwa(), wirt:()=>calcWirt(), kalk:()=>calcKalk(), kap:()=>calcKap(), risk:()=>calcRisk()};
+const TRAINFN = {netz:(n)=>calcNpu(n), pert:(n)=>trPert(n), nwa:(n)=>trNwa(n), wirt:(n)=>trWirt(n), kalk:(n)=>trKalk(n), kap:(n)=>trKap(n), risk:(n)=>trRisk(n)};
 function renderRechner(){
   $('#v-rechner').innerHTML = `
-    <h2>Rechner und Werkzeuge</h2>
-    <p class="muted small">Alle Verfahren mit eigenen Zahlen durchrechnen – so wie in der schriftlichen Prüfung.</p>
-    <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin:.9rem 0 1.1rem">
+    <h2>Rechner und Trainer</h2>
+    <p class="muted small">Im Modus <b>Rechner</b> gibst du eigene Zahlen ein. Im Modus <b>Trainer</b> bekommst du eine zufällig erzeugte Aufgabe, rechnest selbst und lässt die Ergebnisse feldweise prüfen.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin:.9rem 0 .7rem">
       ${CALCS.map(([k,l])=>`<button class="btn sm ${k===calcTab?'primary':''}" onclick="calcTab='${k}';renderRechner()">${l}</button>`).join('')}
     </div>
+    <div style="display:flex;gap:.4rem;margin-bottom:1.1rem;border-top:1px solid var(--line);padding-top:.7rem">
+      <button class="btn sm ${calcMode==='rechner'?'primary':''}" onclick="calcMode='rechner';renderRechner()">🧮 Rechner</button>
+      <button class="btn sm ${calcMode==='training'?'primary':''}" onclick="calcMode='training';renderRechner()">🎓 Trainer</button>
+    </div>
     <div id="calcBody"></div>`;
-  ({netz:calcNetz,npu:calcNpu,pert:calcPert,nwa:calcNwa,wirt:calcWirt,kalk:calcKalk,kap:calcKap,risk:calcRisk})[calcTab]();
+  (calcMode==='training' ? TRAINFN : CALCFN)[calcTab]();
 }
 
 /* --- Netzplan --- */
@@ -4218,6 +4225,335 @@ function npuTipp(){
                       : `<b>${ziel.id}</b> hat keinen Nachfolger. Der freie Puffer ist Projektdauer minus eigener FEZ.`
   };
   $('#npuOut').innerHTML = `<div class="note"><b>Nächster Schritt</b>${texte[ziel.f]}</div>`;
+}
+
+/* ===================== TRAINER-RAHMEN ===================== */
+const TRS = {};
+function trNum(v){
+  v = String(v).trim().replace(/[\s€%]/g,'');
+  if(v.includes(',') && v.includes('.')) v = v.replace(/\./g,'');
+  return parseFloat(v.replace(',','.'));
+}
+const f2 = n => n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
+const f0 = n => n.toLocaleString('de-DE',{maximumFractionDigits:0});
+const fx = (n,d) => n.toLocaleString('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d});
+const rnd = (a,b,s=1) => a + Math.round(Math.random()*(b-a)/s)*s;
+const pick = a => a[Math.floor(Math.random()*a.length)];
+
+function trPruefe(felder){
+  let ok=0, bearbeitet=0, leer=0;
+  const tipps = new Set();
+  felder.forEach(f=>{
+    const el = document.getElementById(f.id); if(!el) return;
+    const roh = el.value.trim();
+    if(roh===''){ leer++; el.style.borderColor=''; el.style.background=''; return; }
+    bearbeitet++;
+    let richtig;
+    if(f.text){ richtig = roh.toUpperCase().replace(/\s/g,'') === String(f.soll).toUpperCase().replace(/\s/g,''); }
+    else { const w = trNum(roh);
+           const tol = f.tol !== undefined ? f.tol : Math.max(0.01, Math.abs(f.soll)*0.005);
+           richtig = isFinite(w) && Math.abs(w - f.soll) <= tol; }
+    el.style.borderColor = richtig ? 'var(--ok)' : 'var(--red)';
+    el.style.background = richtig ? 'rgba(74,222,128,.15)' : 'rgba(248,113,113,.15)';
+    if(richtig) ok++; else if(f.tipp) tipps.add(f.tipp);
+  });
+  const quote = bearbeitet ? Math.round(ok/bearbeitet*100) : 0;
+  $('#trOut').innerHTML = `
+    <div class="calcbox">
+      <p class="result" style="margin:0 0 .5rem">Richtig: <b>${ok}</b> von ${bearbeitet} ausgefüllten Feldern (${quote} %)${leer?` · ${leer} noch leer`:''}</p>
+      <div class="bar"><i style="width:${quote}%;background:${quote>=80?'var(--teal)':quote>=50?'var(--amber)':'var(--red)'}"></i></div>
+      ${tipps.size ? `<div class="note warn" style="margin-bottom:0"><b>Hinweise zu deinen Fehlern</b><ul class="tight" style="margin-bottom:0">${[...tipps].map(t=>`<li>${t}</li>`).join('')}</ul></div>`
+        : (leer===0 && bearbeitet ? `<div class="note" style="margin-bottom:0"><b>Alles richtig</b>Hol dir mit „Neue Aufgabe" den nächsten Datensatz.</div>` : '')}
+    </div>`;
+}
+
+function trBox(tab, titel, aufgabe, felder, weg, loesung){
+  return `
+  <div class="card">
+    <h3>${titel}</h3>
+    <div class="note"><b>Aufgabe</b>${aufgabe}</div>
+    <div class="grid g2" style="margin-top:.9rem">
+      ${felder.map(f=>`<div class="field"><label class="fl">${f.label}${f.unit?' in '+f.unit:''}</label>
+        <input id="${f.id}" inputmode="${f.text?'text':'decimal'}" autocomplete="off"
+        value="${loesung?(f.anzeige!==undefined?f.anzeige:f.soll):''}" style="${loesung?'color:var(--teal)':''}"></div>`).join('')}
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <button class="btn primary" onclick="trPruefe(TRS['${tab}'].felder)">Antworten prüfen</button>
+      <button class="btn ghost" onclick="TRS['${tab}'].loesung=true;TRAINFN['${tab}']()">Lösung anzeigen</button>
+      <button class="btn" onclick="TRAINFN['${tab}'](true)">Neue Aufgabe</button>
+    </div>
+    <div id="trOut"></div>
+    ${loesung?`<div class="calcbox"><div class="eyebrow">Rechenweg</div>${weg}</div>`:''}
+  </div>`;
+}
+
+/* ---------- Trainer: Dreipunktschätzung ---------- */
+function trPert(neu){
+  if(neu || !TRS.pert){
+    const O = rnd(4,20), M = O + rnd(2,12), P = M + rnd(3,20), satz = pick([62,68,75,85,95]);
+    TRS.pert = {O,M,P,satz,loesung:false};
+  }
+  const a = TRS.pert;
+  const ae = (a.O + 4*a.M + a.P)/6, sd = (a.P - a.O)/6;
+  a.felder = [
+    {id:'tp1', label:'Erwarteter Aufwand AE', unit:'h', soll:ae, anzeige:fx(ae,2), tol:0.05, tipp:'AE = (O + 4·M + P) / 6 – der wahrscheinliche Wert wird <b>vierfach</b> gewichtet.'},
+    {id:'tp2', label:'Standardabweichung σ', unit:'h', soll:sd, anzeige:fx(sd,2), tol:0.05, tipp:'σ = (P − O) / 6 – nur der optimistische und der pessimistische Wert gehen ein.'},
+    {id:'tp3', label:'Untere Grenze des 68-%-Bereichs', unit:'h', soll:ae-sd, anzeige:fx(ae-sd,2), tol:0.06, tipp:'Der 68-%-Bereich ist AE ± σ.'},
+    {id:'tp4', label:'Obere Grenze des 95-%-Bereichs', unit:'h', soll:ae+2*sd, anzeige:fx(ae+2*sd,2), tol:0.08, tipp:'Der 95-%-Bereich ist AE ± 2σ.'},
+    {id:'tp5', label:'Kosten bei '+a.satz+' €/h', unit:'€', soll:ae*a.satz, anzeige:f2(ae*a.satz), tol:0.6, tipp:'Kosten = erwarteter Aufwand × Stundensatz.'}
+  ];
+  const weg = `
+    AE = (${a.O} + 4 · ${a.M} + ${a.P}) / 6 = ${a.O + 4*a.M + a.P} / 6 = <b>${fx(ae,2)} h</b><br>
+    σ = (${a.P} − ${a.O}) / 6 = ${a.P-a.O} / 6 = <b>${fx(sd,2)} h</b><br>
+    68-%-Bereich: ${fx(ae,2)} ± ${fx(sd,2)} → ${fx(ae-sd,2)} h bis ${fx(ae+sd,2)} h<br>
+    95-%-Bereich: ${fx(ae,2)} ± ${fx(2*sd,2)} → ${fx(ae-2*sd,2)} h bis ${fx(ae+2*sd,2)} h<br>
+    Kosten = ${fx(ae,2)} h × ${a.satz} €/h = <b>${f2(ae*a.satz)} €</b>`;
+  $('#calcBody').innerHTML = trBox('pert','Trainer: Dreipunktschätzung',
+    `Für ein Arbeitspaket liegen drei Schätzungen vor: optimistisch <b>${a.O} h</b>, wahrscheinlich <b>${a.M} h</b>, pessimistisch <b>${a.P} h</b>. Der interne Stundensatz beträgt <b>${a.satz} €/h</b>. Berechne den erwarteten Aufwand, die Standardabweichung, die Vertrauensbereiche und die Kosten.`,
+    a.felder, weg, a.loesung);
+}
+
+/* ---------- Trainer: Nutzwertanalyse ---------- */
+function trNwa(neu){
+  if(neu || !TRS.nwa){
+    const namen = ['Funktionsumfang','Bedienbarkeit','Supportqualität','Integrationsfähigkeit','Zukunftssicherheit','Datenschutz'];
+    const k = [...namen].sort(()=>Math.random()-0.5).slice(0,4);
+    let g = [rnd(20,40,5), rnd(15,30,5), rnd(10,25,5)]; g.push(100 - g.reduce((x,y)=>x+y,0));
+    while(g[3] < 5){ g[0] -= 5; g[3] += 5; }
+    const b = k.map(()=>[rnd(3,10), rnd(3,10)]);
+    TRS.nwa = {k, g, b, alt:['System A','System B'], loesung:false};
+  }
+  const a = TRS.nwa;
+  const nw = [0,1].map(j => a.k.reduce((s,_,i)=> s + a.g[i]/100 * a.b[i][j], 0));
+  const best = nw[0] >= nw[1] ? 'A' : 'B';
+  a.felder = [
+    {id:'tn1', label:'Nutzwert System A', soll:nw[0], anzeige:fx(nw[0],2), tol:0.03, tipp:'Teilnutzen = Bewertung × Gewicht. Der Gesamtnutzwert ist die Summe aller Teilnutzen.'},
+    {id:'tn2', label:'Nutzwert System B', soll:nw[1], anzeige:fx(nw[1],2), tol:0.03, tipp:'Gewichte als Dezimalwert einsetzen: 40 % entspricht 0,40.'},
+    {id:'tn3', label:'Empfehlung (A oder B)', soll:best, anzeige:best, text:true, tipp:'Empfohlen wird die Alternative mit dem höheren Gesamtnutzwert.'},
+    {id:'tn4', label:'Abstand der beiden Nutzwerte', soll:Math.abs(nw[0]-nw[1]), anzeige:fx(Math.abs(nw[0]-nw[1]),2), tol:0.03, tipp:'Differenz der beiden Gesamtnutzwerte. Unter etwa 5 % Abstand ist das Ergebnis nicht belastbar.'}
+  ];
+  const tabelle = `<div class="tblwrap"><table>
+    <tr><th>Kriterium</th><th>Gewicht</th><th>A</th><th>B</th></tr>
+    ${a.k.map((n,i)=>`<tr><td>${n}</td><td class="mono">${a.g[i]} %</td><td class="mono">${a.b[i][0]}</td><td class="mono">${a.b[i][1]}</td></tr>`).join('')}
+  </table></div>`;
+  const weg = `<div class="tblwrap"><table>
+      <tr><th>Kriterium</th><th>Gewicht</th><th>Teilnutzen A</th><th>Teilnutzen B</th></tr>
+      ${a.k.map((n,i)=>`<tr><td>${n}</td><td class="mono">${a.g[i]} %</td>
+        <td class="mono">${a.b[i][0]} × ${fx(a.g[i]/100,2)} = ${fx(a.b[i][0]*a.g[i]/100,2)}</td>
+        <td class="mono">${a.b[i][1]} × ${fx(a.g[i]/100,2)} = ${fx(a.b[i][1]*a.g[i]/100,2)}</td></tr>`).join('')}
+      <tr><td><b>Nutzwert</b></td><td></td><td class="mono"><b>${fx(nw[0],2)}</b></td><td class="mono"><b>${fx(nw[1],2)}</b></td></tr>
+    </table></div>
+    <p class="small" style="margin:.5rem 0 0">Empfehlung: <b>System ${best}</b> · Abstand ${fx(Math.abs(nw[0]-nw[1]),2)} Punkte (${fx(Math.abs(nw[0]-nw[1])/Math.max(...nw)*100,1)} %).
+    Liegt der Abstand unter etwa 5 %, sollte eine Sensitivitätsbetrachtung folgen.</p>`;
+  $('#calcBody').innerHTML = trBox('nwa','Trainer: Nutzwertanalyse',
+    `Zwei Systeme stehen zur Auswahl. Ermittle die Gesamtnutzwerte und gib eine Empfehlung ab.${tabelle}`,
+    a.felder, weg, a.loesung);
+}
+
+/* ---------- Trainer: Wirtschaftlichkeit ---------- */
+function trWirt(neu){
+  if(neu || !TRS.wirt) TRS.wirt = {typ: pick(['amort','evm']), loesung:false, seed:Math.random()};
+  const a = TRS.wirt;
+  if(a.typ === 'amort'){
+    if(!a.inv){
+      a.inv = rnd(24000,72000,500);
+      a.e1 = rnd(1500,6000,100); a.e2 = rnd(1500,6000,100); a.e3 = rnd(1000,4000,100);
+      a.h = rnd(2,8); a.satz = pick([58,62,68,75]); a.n = rnd(4,7);
+    }
+    const admin = a.h*12*a.satz;
+    const rueck = a.e1 + a.e2 + a.e3 + admin;
+    const t = a.inv/rueck, ueber = rueck*a.n - a.inv, roi = ueber/a.inv*100;
+    a.felder = [
+      {id:'tw1', label:'Jährlicher Rückfluss', unit:'€', soll:rueck, anzeige:f2(rueck), tol:1, tipp:'Alle jährlichen Einsparungen addieren – der eingesparte Administrationsaufwand wird über Stunden × 12 × Stundensatz bewertet.'},
+      {id:'tw2', label:'Amortisationszeit', unit:'Jahren', soll:t, anzeige:fx(t,2), tol:0.02, tipp:'Amortisationszeit = Investition / jährlicher Rückfluss.'},
+      {id:'tw3', label:'Überschuss nach '+a.n+' Jahren', unit:'€', soll:ueber, anzeige:f2(ueber), tol:1, tipp:'Rückfluss × Nutzungsdauer − Investition.'},
+      {id:'tw4', label:'ROI über die Nutzungsdauer', unit:'%', soll:roi, anzeige:fx(roi,1), tol:0.2, tipp:'ROI = (Überschuss / Investition) × 100.'},
+      {id:'tw5', label:'Wirtschaftlich? (ja oder nein)', soll: t<=a.n?'JA':'NEIN', anzeige: t<=a.n?'ja':'nein', text:true, tipp:'Wirtschaftlich ist die Investition, wenn die Amortisationszeit unter der Nutzungsdauer liegt.'}
+    ];
+    const weg = `
+      Administration: ${a.h} h × 12 × ${a.satz} € = ${f2(admin)} €<br>
+      Rückfluss = ${f0(a.e1)} + ${f0(a.e2)} + ${f0(a.e3)} + ${f2(admin)} = <b>${f2(rueck)} €</b><br>
+      Amortisation = ${f0(a.inv)} / ${f2(rueck)} = <b>${fx(t,2)} Jahre</b><br>
+      Überschuss = ${f2(rueck)} × ${a.n} − ${f0(a.inv)} = <b>${f2(ueber)} €</b><br>
+      ROI = ${f2(ueber)} / ${f0(a.inv)} × 100 = <b>${fx(roi,1)} %</b><br>
+      ${t<=a.n?`Die Amortisation liegt unter der Nutzungsdauer von ${a.n} Jahren – die Investition ist <b>wirtschaftlich</b>.`:`Die Amortisation liegt über der Nutzungsdauer von ${a.n} Jahren – die Investition ist <b>nicht wirtschaftlich</b>.`}`;
+    $('#calcBody').innerHTML = trBox('wirt','Trainer: Amortisation und ROI',
+      `Eine Investition kostet <b>${f0(a.inv)} €</b> bei einer Nutzungsdauer von <b>${a.n} Jahren</b>. Jährlich werden eingespart: Energie <b>${f0(a.e1)} €</b>, Wartung <b>${f0(a.e2)} €</b>, anteilige Ersatzbeschaffung <b>${f0(a.e3)} €</b>. Zusätzlich entfallen <b>${a.h} Stunden</b> Administrationsaufwand pro Monat bei einem Stundensatz von <b>${a.satz} €</b>.`,
+      a.felder, weg, a.loesung);
+  } else {
+    if(!a.pv){
+      a.bac = rnd(80000,200000,5000);
+      a.pv = Math.round(a.bac * (0.4 + Math.random()*0.3) / 500)*500;
+      a.ev = Math.round(a.pv * (0.72 + Math.random()*0.4) / 500)*500;
+      a.ac = Math.round(a.ev * (0.8 + Math.random()*0.45) / 500)*500;
+    }
+    const cv = a.ev-a.ac, sv = a.ev-a.pv, cpi = a.ev/a.ac, spi = a.ev/a.pv, eac = a.bac/cpi;
+    a.felder = [
+      {id:'te1', label:'Kostenabweichung CV', unit:'€', soll:cv, anzeige:f2(cv), tol:1, tipp:'CV = EV − AC. Ein negativer Wert bedeutet Mehrkosten.'},
+      {id:'te2', label:'Terminabweichung SV', unit:'€', soll:sv, anzeige:f2(sv), tol:1, tipp:'SV = EV − PV. Ein negativer Wert bedeutet Verzug.'},
+      {id:'te3', label:'CPI', soll:cpi, anzeige:fx(cpi,3), tol:0.005, tipp:'CPI = EV / AC. Werte unter 1 zeigen eine Kostenüberschreitung.'},
+      {id:'te4', label:'SPI', soll:spi, anzeige:fx(spi,3), tol:0.005, tipp:'SPI = EV / PV. Werte unter 1 zeigen Verzug.'},
+      {id:'te5', label:'Prognose Endkosten EAC', unit:'€', soll:eac, anzeige:f2(eac), tol:5, tipp:'EAC = Gesamtbudget BAC / CPI.'}
+    ];
+    const weg = `
+      CV = ${f0(a.ev)} − ${f0(a.ac)} = <b>${f2(cv)} €</b><br>
+      SV = ${f0(a.ev)} − ${f0(a.pv)} = <b>${f2(sv)} €</b><br>
+      CPI = ${f0(a.ev)} / ${f0(a.ac)} = <b>${fx(cpi,3)}</b><br>
+      SPI = ${f0(a.ev)} / ${f0(a.pv)} = <b>${fx(spi,3)}</b><br>
+      EAC = ${f0(a.bac)} / ${fx(cpi,3)} = <b>${f2(eac)} €</b><br>
+      Deutung: ${cpi>=1?'im Budget':'teurer als geplant'} · ${spi>=1?'im Zeitplan':'im Verzug'}`;
+    $('#calcBody').innerHTML = trBox('wirt','Trainer: Earned Value',
+      `Zum Stichtag gilt: Planned Value <b>${f0(a.pv)} €</b>, Earned Value <b>${f0(a.ev)} €</b>, Actual Cost <b>${f0(a.ac)} €</b>. Das Gesamtbudget beträgt <b>${f0(a.bac)} €</b>. Berechne die Abweichungen, die Indizes und die Prognose.`,
+      a.felder, weg, a.loesung);
+  }
+}
+
+/* ---------- Trainer: Kalkulation ---------- */
+function trKalk(neu){
+  if(neu || !TRS.kalk) TRS.kalk = {typ: pick(['zuschlag','satz','skonto']), loesung:false};
+  const a = TRS.kalk;
+  if(a.typ === 'zuschlag'){
+    if(!a.me){
+      a.me = rnd(6000,20000,500); a.mg = rnd(5,15); a.fe = rnd(12000,30000,500); a.fg = rnd(20,40,5);
+      a.vv = rnd(8,18); a.gw = rnd(5,15); a.sk = pick([2,3]); a.ra = pick([5,10,15]);
+    }
+    const mg = a.me*a.mg/100, fg = a.fe*a.fg/100, hk = a.me+mg+a.fe+fg;
+    const vv = hk*a.vv/100, sk = hk+vv, gw = sk*a.gw/100, bvp = sk+gw;
+    const zvp = bvp/(1-a.sk/100), lvp = zvp/(1-a.ra/100), brutto = lvp*1.19;
+    a.felder = [
+      {id:'tk1', label:'Herstellkosten', unit:'€', soll:hk, anzeige:f2(hk), tol:1, tipp:'Material- und Fertigungseinzelkosten plus die jeweiligen Gemeinkosten.'},
+      {id:'tk2', label:'Selbstkosten', unit:'€', soll:sk, anzeige:f2(sk), tol:1, tipp:'Herstellkosten plus Verwaltungs- und Vertriebsgemeinkosten (Zuschlag auf die Herstellkosten).'},
+      {id:'tk3', label:'Barverkaufspreis', unit:'€', soll:bvp, anzeige:f2(bvp), tol:1, tipp:'Selbstkosten plus Gewinnzuschlag.'},
+      {id:'tk4', label:'Zielverkaufspreis', unit:'€', soll:zvp, anzeige:f2(zvp), tol:1, tipp:'Skonto wird im Hundert gerechnet: Barverkaufspreis / (1 − Skontosatz). Nicht multiplizieren.'},
+      {id:'tk5', label:'Listenverkaufspreis netto', unit:'€', soll:lvp, anzeige:f2(lvp), tol:1, tipp:'Rabatt wird im Hundert gerechnet: Zielverkaufspreis / (1 − Rabattsatz).'},
+      {id:'tk6', label:'Bruttoangebotspreis (19 % USt)', unit:'€', soll:brutto, anzeige:f2(brutto), tol:1.5, tipp:'Listenverkaufspreis netto × 1,19.'}
+    ];
+    const weg = `<div class="tblwrap"><table>
+      <tr><td>Materialeinzelkosten</td><td class="mono">${f2(a.me)} €</td></tr>
+      <tr><td>+ Materialgemeinkosten ${a.mg} %</td><td class="mono">${f2(mg)} €</td></tr>
+      <tr><td>+ Fertigungseinzelkosten</td><td class="mono">${f2(a.fe)} €</td></tr>
+      <tr><td>+ Fertigungsgemeinkosten ${a.fg} %</td><td class="mono">${f2(fg)} €</td></tr>
+      <tr><td><b>= Herstellkosten</b></td><td class="mono"><b>${f2(hk)} €</b></td></tr>
+      <tr><td>+ Verwaltung und Vertrieb ${a.vv} %</td><td class="mono">${f2(vv)} €</td></tr>
+      <tr><td><b>= Selbstkosten</b></td><td class="mono"><b>${f2(sk)} €</b></td></tr>
+      <tr><td>+ Gewinn ${a.gw} %</td><td class="mono">${f2(gw)} €</td></tr>
+      <tr><td><b>= Barverkaufspreis</b></td><td class="mono"><b>${f2(bvp)} €</b></td></tr>
+      <tr><td>÷ (1 − ${a.sk}/100) Skonto</td><td class="mono">${f2(zvp)} €</td></tr>
+      <tr><td>÷ (1 − ${a.ra}/100) Rabatt</td><td class="mono"><b>${f2(lvp)} €</b></td></tr>
+      <tr><td>× 1,19 Umsatzsteuer</td><td class="mono"><b>${f2(brutto)} €</b></td></tr>
+    </table></div>`;
+    $('#calcBody').innerHTML = trBox('kalk','Trainer: Zuschlagskalkulation',
+      `Materialeinzelkosten <b>${f0(a.me)} €</b>, Materialgemeinkosten <b>${a.mg} %</b>, Fertigungseinzelkosten <b>${f0(a.fe)} €</b>, Fertigungsgemeinkosten <b>${a.fg} %</b>, Verwaltungs- und Vertriebsgemeinkosten <b>${a.vv} %</b>, Gewinnzuschlag <b>${a.gw} %</b>, Skonto <b>${a.sk} %</b>, Rabatt <b>${a.ra} %</b>, Umsatzsteuer 19 %.`,
+      a.felder, weg, a.loesung);
+  } else if(a.typ === 'satz'){
+    if(!a.brutto){
+      a.brutto = rnd(38000,72000,1000); a.ag = rnd(19,23); a.ap = rnd(4000,9000,500);
+      a.tage = rnd(195,215); a.std = 8; a.verr = pick([70,75,80]);
+    }
+    const jahr = a.brutto*(1+a.ag/100) + a.ap;
+    const anwesend = a.tage*a.std, verrechenbar = anwesend*a.verr/100;
+    const satz = jahr/verrechenbar;
+    a.felder = [
+      {id:'ts1', label:'Jahreskosten gesamt', unit:'€', soll:jahr, anzeige:f2(jahr), tol:1, tipp:'Bruttogehalt × (1 + Arbeitgeberanteil) + Arbeitsplatzkosten.'},
+      {id:'ts2', label:'Anwesenheitsstunden', unit:'h', soll:anwesend, anzeige:f0(anwesend), tol:0.5, tipp:'Anwesenheitstage × Stunden je Tag.'},
+      {id:'ts3', label:'Verrechenbare Stunden', unit:'h', soll:verrechenbar, anzeige:fx(verrechenbar,1), tol:0.6, tipp:'Anwesenheitsstunden × verrechenbarer Anteil.'},
+      {id:'ts4', label:'Kalkulatorischer Stundensatz', unit:'€/h', soll:satz, anzeige:fx(satz,2), tol:0.05, tipp:'Jahreskosten / verrechenbare Stunden.'}
+    ];
+    const weg = `
+      Jahreskosten = ${f0(a.brutto)} × ${fx(1+a.ag/100,2)} + ${f0(a.ap)} = <b>${f2(jahr)} €</b><br>
+      Anwesenheit = ${a.tage} Tage × ${a.std} h = <b>${f0(anwesend)} h</b><br>
+      Verrechenbar = ${f0(anwesend)} × ${a.verr} % = <b>${fx(verrechenbar,1)} h</b><br>
+      Stundensatz = ${f2(jahr)} / ${fx(verrechenbar,1)} = <b>${fx(satz,2)} €/h</b><br>
+      <span class="muted">Der Verkaufsstundensatz liegt darüber, weil Gemeinkosten und Gewinn noch hinzukommen.</span>`;
+    $('#calcBody').innerHTML = trBox('kalk','Trainer: Kalkulatorischer Stundensatz',
+      `Ein Mitarbeiter verdient <b>${f0(a.brutto)} €</b> brutto im Jahr, die Arbeitgeberanteile betragen <b>${a.ag} %</b>. Die Arbeitsplatzkosten liegen bei <b>${f0(a.ap)} €</b> pro Jahr. Er ist an <b>${a.tage} Tagen</b> mit je <b>${a.std} Stunden</b> anwesend, davon sind <b>${a.verr} %</b> verrechenbar.`,
+      a.felder, weg, a.loesung);
+  } else {
+    if(!a.satzp){
+      a.satzp = pick([1,2,3]); a.frist = pick([7,10,14]); a.ziel = pick([30,45,60]);
+      a.rech = rnd(4000,25000,100);
+    }
+    const zins = a.satzp*360/(a.ziel-a.frist);
+    const abzug = a.rech*a.satzp/100, zahlbetrag = a.rech-abzug;
+    a.felder = [
+      {id:'tsk1', label:'Skontobetrag', unit:'€', soll:abzug, anzeige:f2(abzug), tol:0.5, tipp:'Rechnungsbetrag × Skontosatz.'},
+      {id:'tsk2', label:'Zahlbetrag bei Skontonutzung', unit:'€', soll:zahlbetrag, anzeige:f2(zahlbetrag), tol:0.5, tipp:'Rechnungsbetrag abzüglich Skontobetrag.'},
+      {id:'tsk3', label:'Jahreszins des Lieferantenkredits', unit:'%', soll:zins, anzeige:fx(zins,2), tol:0.05, tipp:'(Skontosatz × 360) / (Zahlungsziel − Skontofrist).'},
+      {id:'tsk4', label:'Skonto ziehen bei 9 % Kreditzins? (ja/nein)', soll: zins>9?'JA':'NEIN', anzeige: zins>9?'ja':'nein', text:true, tipp:'Liegt der Jahreszins des Lieferantenkredits über dem Kreditzins, lohnt sich die Skontonutzung.'}
+    ];
+    const weg = `
+      Skontobetrag = ${f0(a.rech)} × ${a.satzp} % = <b>${f2(abzug)} €</b><br>
+      Zahlbetrag = ${f0(a.rech)} − ${f2(abzug)} = <b>${f2(zahlbetrag)} €</b><br>
+      Jahreszins = (${a.satzp} × 360) / (${a.ziel} − ${a.frist}) = ${a.satzp*360} / ${a.ziel-a.frist} = <b>${fx(zins,2)} % p. a.</b><br>
+      ${zins>9?'Der Lieferantenkredit ist teurer als ein Kontokorrentkredit zu 9 % – <b>Skonto ziehen</b>, notfalls über den Kredit finanzieren.':'Der Lieferantenkredit ist günstiger als 9 % – hier lohnt die Skontonutzung ausnahmsweise <b>nicht</b> zwingend.'}`;
+    $('#calcBody').innerHTML = trBox('kalk','Trainer: Skonto und Lieferantenkredit',
+      `Eine Rechnung über <b>${f0(a.rech)} €</b> trägt die Bedingung „<b>${a.satzp} % Skonto</b> bei Zahlung binnen <b>${a.frist} Tagen</b>, netto <b>${a.ziel} Tage</b>".`,
+      a.felder, weg, a.loesung);
+  }
+}
+
+/* ---------- Trainer: Kapazität ---------- */
+function trKap(neu){
+  if(neu || !TRS.kap){
+    TRS.kap = {ma:rnd(2,5), wo:pick([38,39,40]), verf:pick([50,60,70,80]), wochen:pick([1,2]), loesung:false};
+    TRS.kap.bedarf = rnd(40,180,2);
+  }
+  const a = TRS.kap;
+  const verf = a.ma*a.wo*(a.verf/100)*a.wochen;
+  const aus = a.bedarf/verf*100, diff = a.bedarf-verf;
+  a.felder = [
+    {id:'tc1', label:'Verfügbare Kapazität', unit:'h', soll:verf, anzeige:fx(verf,1), tol:0.2, tipp:'Mitarbeiter × Wochenstunden × Projektverfügbarkeit × Anzahl Wochen. Nie die Bruttoarbeitszeit ansetzen.'},
+    {id:'tc2', label:'Auslastungsgrad', unit:'%', soll:aus, anzeige:fx(aus,1), tol:0.2, tipp:'Benötigte Kapazität / verfügbare Kapazität × 100.'},
+    {id:'tc3', label:diff>0?'Überlast':'Freie Kapazität', unit:'h', soll:Math.abs(diff), anzeige:fx(Math.abs(diff),1), tol:0.2, tipp:'Differenz zwischen Bedarf und Verfügbarkeit.'},
+    {id:'tc4', label:'Engpass vorhanden? (ja/nein)', soll: diff>0?'JA':'NEIN', anzeige: diff>0?'ja':'nein', text:true, tipp:'Ein Engpass besteht, sobald der Auslastungsgrad über 100 % liegt.'}
+  ];
+  const weg = `
+    Verfügbar = ${a.ma} × ${a.wo} h × ${a.verf} % × ${a.wochen} = <b>${fx(verf,1)} h</b><br>
+    Auslastung = ${f0(a.bedarf)} / ${fx(verf,1)} × 100 = <b>${fx(aus,1)} %</b><br>
+    ${diff>0
+      ? `Überlast = ${f0(a.bedarf)} − ${fx(verf,1)} = <b>${fx(diff,1)} h</b><br><span class="muted">Maßnahmen in dieser Reihenfolge: 1. Vorgänge innerhalb ihres Puffers verschieben (kostenneutral) 2. Kapazität erhöhen 3. Projektdauer verlängern.</span>`
+      : `Freie Kapazität = ${fx(-diff,1)} h<br><span class="muted">Es besteht Spielraum, um Arbeitspakete vorzuziehen.</span>`}`;
+  $('#calcBody').innerHTML = trBox('kap','Trainer: Kapazitätsabgleich',
+    `Im Betrachtungszeitraum von <b>${a.wochen} Woche${a.wochen>1?'n':''}</b> werden <b>${f0(a.bedarf)} Stunden</b> benötigt. Zur Verfügung stehen <b>${a.ma} Mitarbeiter</b> mit je <b>${a.wo} Wochenstunden</b>, die zu <b>${a.verf} %</b> für Projekte verfügbar sind.`,
+    a.felder, weg, a.loesung);
+}
+
+/* ---------- Trainer: Risikobewertung ---------- */
+function trRisk(neu){
+  if(neu || !TRS.risk){
+    const namen = ['Lieferverzug Hardware','Ausfall einer Schlüsselperson','Anwendungsinkompatibilität','Datenverlust bei der Migration','Nichtakzeptanz durch Anwender','Überschreitung des Wartungsfensters'];
+    const gew = [...namen].sort(()=>Math.random()-0.5).slice(0,4);
+    TRS.risk = {r: gew.map(n=>({n, w:rnd(10,60,5), s:rnd(3000,40000,500), ws:rnd(1,5), ss:rnd(1,5)})), loesung:false};
+  }
+  const a = TRS.risk;
+  const werte = a.r.map(x => x.w/100 * x.s);
+  const summe = werte.reduce((x,y)=>x+y,0);
+  const groesstes = a.r[werte.indexOf(Math.max(...werte))].n;
+  const kz = a.r.map(x=>x.ws*x.ss);
+  const stufe = v => v>=15?'ROT' : v>=5?'GELB' : 'GRUEN';
+  a.felder = [
+    ...a.r.map((x,i)=>({id:'tr'+i, label:'Risikowert '+x.n, unit:'€', soll:werte[i], anzeige:f2(werte[i]), tol:0.5,
+      tipp:'Risikowert = Eintrittswahrscheinlichkeit × Schadenshöhe. Prozentwert als Dezimalzahl einsetzen.'})),
+    {id:'trs', label:'Summe der Risikovorsorge', unit:'€', soll:summe, anzeige:f2(summe), tol:1, tipp:'Alle Einzelrisikowerte addieren – dieser Betrag fließt als Vorsorge in die Kalkulation.'},
+    {id:'trm', label:'Größtes Einzelrisiko (Name)', soll:groesstes, anzeige:groesstes, text:true, tipp:'Maßgeblich ist der höchste Risikowert, nicht die höchste Schadenshöhe allein.'},
+    {id:'trk', label:'Kennzahl '+a.r[0].n+' bei W='+a.r[0].ws+' und S='+a.r[0].ss, soll:kz[0], anzeige:String(kz[0]), tol:0.01, tipp:'Bei der Punkteskala gilt Kennzahl = W × S mit einem Ergebnis von 1 bis 25.'},
+    {id:'trf', label:'Ampelstufe dazu (gruen/gelb/rot)', soll:stufe(kz[0]), anzeige:stufe(kz[0]).toLowerCase(), text:true, tipp:'1 bis 4 grün, 5 bis 12 gelb, ab 15 rot.'}
+  ];
+  const weg = `<div class="tblwrap"><table>
+      <tr><th>Risiko</th><th>W</th><th>Schaden</th><th>Risikowert</th></tr>
+      ${a.r.map((x,i)=>`<tr><td>${x.n}</td><td class="mono">${x.w} %</td><td class="mono">${f0(x.s)} €</td>
+        <td class="mono">${fx(x.w/100,2)} × ${f0(x.s)} = <b>${f2(werte[i])} €</b></td></tr>`).join('')}
+      <tr><td colspan="3"><b>Summe der Risikovorsorge</b></td><td class="mono"><b>${f2(summe)} €</b></td></tr>
+    </table></div>
+    <p class="small" style="margin:.5rem 0 0">Größtes Einzelrisiko: <b>${groesstes}</b>. Punkteskala für ${a.r[0].n}: ${a.r[0].ws} × ${a.r[0].ss} = <b>${kz[0]}</b> → Stufe <b>${stufe(kz[0]).toLowerCase()}</b>
+    (1–4 grün beobachten · 5–12 gelb Maßnahmen planen · ab 15 rot sofort handeln und eskalieren).</p>`;
+  const tabelle = `<div class="tblwrap"><table>
+    <tr><th>Risiko</th><th>Eintrittswahrscheinlichkeit</th><th>Schadenshöhe</th></tr>
+    ${a.r.map(x=>`<tr><td>${x.n}</td><td class="mono">${x.w} %</td><td class="mono">${f0(x.s)} €</td></tr>`).join('')}
+  </table></div>`;
+  $('#calcBody').innerHTML = trBox('risk','Trainer: Risikobewertung',
+    `Bewerte die folgenden Risiken monetär und ermittle die Risikovorsorge. Für das erste Risiko liegt zusätzlich eine Bewertung auf der Punkteskala vor: W = ${a.r[0].ws}, S = ${a.r[0].ss}.${tabelle}`,
+    a.felder, weg, a.loesung);
 }
 
 /* --- Risikomatrix --- */
