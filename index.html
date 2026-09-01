@@ -245,6 +245,23 @@ footer{border-top:1px solid var(--line);margin-top:2.5rem;padding-top:1.4rem;col
 .tblwrap table{min-width:min(100%,420px)}
 .reader ul,.reader ol{max-width:74ch}
 .reader table td,.reader table th{word-break:normal;overflow-wrap:anywhere}
+
+/* ---------- Netzplan-Knoten ---------- */
+.npwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:.4rem 0;margin-top:.8rem}
+.npcanvas{position:relative}
+.npnode{position:absolute;width:142px}
+.npn-out{display:flex;justify-content:space-between;gap:6px}
+.npn-out input{width:52px;padding:.16rem 0;text-align:center;font-family:var(--mono);font-size:.78rem;border-radius:4px}
+.npn-lab{width:52px;text-align:center;font-family:var(--mono);font-size:.66rem;color:var(--ink-faint)}
+.npn-box{border:1px solid #55738f;border-radius:5px;background:var(--bg-deep);margin:3px 0;overflow:hidden}
+.npn-name{text-align:center;font-size:.7rem;padding:.16rem .25rem;border-bottom:1px solid #55738f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-dim)}
+.npn-name b{color:var(--ink)}
+.npn-mid{display:grid;grid-template-columns:1fr 1fr 1fr}
+.npn-mid>*{border-right:1px solid #55738f;min-width:0}
+.npn-mid>*:last-child{border-right:0}
+.npn-mid span{display:block;text-align:center;font-family:var(--mono);font-size:.76rem;padding:.2rem 0;color:var(--amber)}
+.npn-mid input{border:0;border-radius:0;background:transparent;padding:.2rem 0;text-align:center;font-family:var(--mono);font-size:.76rem;width:100%}
+.npn-mid input:focus{background:rgba(45,212,191,.1)}
 </style>
 </head>
 <body>
@@ -3190,6 +3207,28 @@ FML.push(
  ]}
 );
 
+OA.push(
+{t:'Netzplan aus einer Textbeschreibung erstellen',
+ a:'Für die Einrichtung eines neuen Besprechungsraums gilt: Die Bedarfsanalyse (3 Tage) startet das Projekt. Danach können parallel die Elektroplanung (4 Tage) und die Medientechnikauswahl (6 Tage) beginnen. Die Verkabelung (5 Tage) setzt die Elektroplanung voraus. Die Bestellung der Medientechnik (8 Tage) setzt die Medientechnikauswahl voraus. Die Montage (4 Tage) kann erst beginnen, wenn Verkabelung und Bestellung abgeschlossen sind. Zum Schluss folgt die Inbetriebnahme mit Einweisung (2 Tage). Erstellen Sie die Vorgangsliste, berechnen Sie alle Zeitpunkte und Puffer und bestimmen Sie Projektdauer und kritischen Pfad.',
+ l:'<b>Vorgangsliste:</b> A Bedarfsanalyse 3 (–) · B Elektroplanung 4 (A) · C Medientechnikauswahl 6 (A) · D Verkabelung 5 (B) · E Bestellung 8 (C) · F Montage 4 (D, E) · G Inbetriebnahme 2 (F)<br><br><b>Vorwärtsrechnung:</b> A 0–3 · B 3–7 · C 3–9 · D 7–12 · E 9–17 · F: FAZ = max(12; 17) = 17, FEZ 21 · G 21–23.<br><b>Projektdauer: 23 Tage.</b><br><br><b>Rückwärtsrechnung:</b> G: SEZ 23, SAZ 21 · F: SEZ 21, SAZ 17 · E: SEZ 17, SAZ 9 · D: SEZ 17, SAZ 12 · C: SEZ 9, SAZ 3 · B: SEZ 12, SAZ 8 · A: SEZ = min(8; 3) = 3, SAZ 0.<br><br><b>Puffer:</b> A 0 · B 8 − 3 = 5 · C 0 · D 12 − 7 = 5 · E 0 · F 0 · G 0.<br><b>Kritischer Pfad: A → C → E → F → G.</b><br><br><b>Deutung:</b> Der Engpass ist die Beschaffung der Medientechnik, nicht die Elektroarbeit. Der Elektrostrang B → D hat 5 Tage Reserve. Steuerungsempfehlung: Aufmerksamkeit und eventuelle Beschleunigung auf die Bestellung richten, etwa durch frühere Auswahlentscheidung oder verbindliche Lieferzusage.'},
+
+{t:'Netzplan mit Minimalabstand',
+ a:'Gegeben: A Bestellung auslösen (1 Tag), B Wareneingang und Prüfung (2 Tage), C Installation (4 Tage), D Test und Abnahme (3 Tage). Zwischen A und B liegt eine Lieferzeit von 10 Arbeitstagen, die als Minimalabstand zu berücksichtigen ist. B ist Vorgänger von C, C ist Vorgänger von D. Berechnen Sie die Projektdauer und erläutern Sie, warum die Lieferzeit nicht als eigener Vorgang modelliert werden muss.',
+ l:'<b>Berechnung mit Minimalabstand:</b><br>A: FAZ 0, FEZ 1<br>B: FAZ ≥ FEZ<sub>A</sub> + 10 = 1 + 10 = 11, FEZ 13<br>C: FAZ 13, FEZ 17<br>D: FAZ 17, FEZ 20<br><b>Projektdauer: 20 Arbeitstage.</b> Alle Vorgänge liegen auf dem kritischen Pfad, der Gesamtpuffer ist überall 0.<br><br><b>Warum kein eigener Vorgang:</b> Die Lieferzeit verbraucht keine eigene Kapazität und ist keine Arbeitsleistung des Projektteams. Würde man sie als Vorgang „warten auf Lieferung" mit 10 Tagen Dauer aufnehmen, erschiene sie in der Ressourcenplanung als Aufwand und in der Kostenrechnung als Leistung – beides wäre falsch. Der Minimalabstand bildet die Wartezeit sachgerecht ab.<br><br><b>Alternative Modellierung:</b> Man kann die Lieferzeit als Vorgang mit Dauer 10 und ohne Ressourcenzuordnung aufnehmen. Das ist in vielen Werkzeugen üblich und rechnerisch gleichwertig, muss aber in der Ressourcen- und Kostenauswertung ausgeschlossen werden.'},
+
+{t:'Terminverdichtung berechnen',
+ a:'Ein Projekt dauert laut Netzplan 24 Tage, der Kunde verlangt 20 Tage. Der kritische Pfad lautet A → C → E. Gegeben sind: A Normaldauer 6 Tage / 9.000 €, Crashdauer 4 Tage / 11.400 €. C Normaldauer 10 Tage / 15.000 €, Crashdauer 7 Tage / 18.600 €. E Normaldauer 8 Tage / 12.000 €, Crashdauer 6 Tage / 15.000 €. Der parallele Weg B → D hat 3 Tage Gesamtpuffer. Ermitteln Sie die Kostensteigerungsraten, die günstigste Verkürzung um 4 Tage und die Zusatzkosten. Welche Einschränkung ist zu beachten?',
+ l:'<b>Kostensteigerungsraten:</b><br>A: (11.400 − 9.000) / (6 − 4) = 2.400 / 2 = <b>1.200 € je Tag</b>, maximal 2 Tage<br>C: (18.600 − 15.000) / (10 − 7) = 3.600 / 3 = <b>1.200 € je Tag</b>, maximal 3 Tage<br>E: (15.000 − 12.000) / (8 − 6) = 3.000 / 2 = <b>1.500 € je Tag</b>, maximal 2 Tage<br><br><b>Günstigste Verkürzung um 4 Tage:</b> A und C kosten je 1.200 € pro Tag und sind damit gleich günstig. Zusammen erlauben sie 5 Tage Verkürzung, benötigt werden 4.<br>Beispielsweise C um 3 Tage (3.600 €) und A um 1 Tag (1.200 €) → <b>Zusatzkosten 4.800 €</b>. Jede andere Kombination aus A und C mit insgesamt 4 Tagen kostet ebenfalls 4.800 €. Vorgang E wird nicht verkürzt, da er mit 1.500 € teurer ist.<br><br><b>Einschränkung:</b> Der parallele Weg B → D hat nur 3 Tage Puffer. Nach einer Verkürzung des kritischen Pfads um 3 Tage ist dieser Puffer aufgebraucht, und B → D wird selbst kritisch. Der vierte Tag lässt sich deshalb nur erreichen, wenn <b>gleichzeitig auf beiden Pfaden</b> verkürzt wird. Die tatsächlichen Zusatzkosten liegen also über 4.800 €, weil zusätzlich eine Verkürzung auf dem Weg B → D bezahlt werden muss.<br><br><b>Merksatz:</b> Nach jeder Verkürzung den Netzplan neu rechnen. Sobald mehrere Pfade Gesamtpuffer 0 haben, wirkt eine Maßnahme nur, wenn sie alle kritischen Pfade gleichzeitig verkürzt.'}
+);
+
+Q.push(
+{c:'Planung',q:'Vorgang E endet frühestens zum Zeitpunkt 8, sein einziger Nachfolger H beginnt frühestens ebenfalls zum Zeitpunkt 8. E hat einen Gesamtpuffer von 9. Wie groß ist der freie Puffer von E?',o:['9','4','0','2'],a:2,e:'FP = kleinster FAZ der Nachfolger − eigener FEZ = 8 − 8 = 0. Der Gesamtpuffer von 9 gehört der Kette E→H gemeinsam: Verschiebt sich E, verschiebt sich H sofort mit.'},
+{c:'Planung',q:'Ein Vorgang hat GP = 9 und FP = 9. Was folgt daraus?',o:['Der Vorgang ist kritisch','Der Vorgang kann sich um bis zu 9 Zeiteinheiten verschieben, ohne dass ein Nachfolger sich mitverschiebt','Der Vorgang kann entfallen','Der Vorgang hat keinen Nachfolger'],a:1,e:'Sind GP und FP gleich, liegt der Puffer vollständig bei diesem Vorgang und wird nicht mit nachfolgenden Vorgängen geteilt.'},
+{c:'Planung',q:'In welcher Reihenfolge werden die Felder eines Vorgangsknotens ausgefüllt?',o:['GP, FP, FAZ, FEZ, SAZ, SEZ','FAZ und FEZ vorwärts, dann SEZ und SAZ rückwärts, zuletzt GP und FP','SAZ und SEZ zuerst, dann FAZ und FEZ','Alle Felder gleichzeitig'],a:1,e:'Die Puffer lassen sich erst berechnen, wenn Vorwärts- und Rückwärtsrechnung abgeschlossen sind.'},
+{c:'Planung',q:'Was steht in der mittleren Zeile eines Vorgangsknotens nach der üblichen IHK-Darstellung?',o:['FAZ, Vorgang, FEZ','Dauer, Gesamtpuffer, freier Puffer','SAZ, Dauer, SEZ','Nummer, Name, Verantwortlicher'],a:1,e:'Oben stehen FAZ und FEZ, unten SAZ und SEZ, in der Mitte Dauer, GP und FP.'},
+{c:'Planung',q:'Ein Vorgang mit GP = 9 verzögert sich um 4 Zeiteinheiten. Was passiert mit dem Projektende?',o:['Es verschiebt sich um 4 Einheiten','Es bleibt unverändert, die Verzögerung liegt innerhalb des Puffers','Es verschiebt sich um 5 Einheiten','Das lässt sich ohne den freien Puffer nicht sagen'],a:1,e:'Solange die Verzögerung den Gesamtpuffer nicht überschreitet, bleibt der Endtermin stabil. Nachfolger können sich aber verschieben, wenn der freie Puffer kleiner ist.'}
+);
+
 /* ===================== ABLAUFPLAN ===================== */
 const ABL_INTRO = [
  {t:'Arbeitspakete aus dem PSP übernehmen',
@@ -3507,7 +3546,7 @@ function toggleRead(i){
 
 /* ===================== RECHNER ===================== */
 let calcTab = 'netz';
-const CALCS = [['netz','Netzplan'],['pert','Dreipunkt'],['nwa','Nutzwertanalyse'],['wirt','Wirtschaftlichkeit'],['kalk','Kalkulation'],['kap','Kapazität'],['risk','Risikomatrix']];
+const CALCS = [['netz','Netzplan'],['npu','Netzplan-Training'],['pert','Dreipunkt'],['nwa','Nutzwertanalyse'],['wirt','Wirtschaftlichkeit'],['kalk','Kalkulation'],['kap','Kapazität'],['risk','Risikomatrix']];
 function renderRechner(){
   $('#v-rechner').innerHTML = `
     <h2>Rechner und Werkzeuge</h2>
@@ -3516,7 +3555,7 @@ function renderRechner(){
       ${CALCS.map(([k,l])=>`<button class="btn sm ${k===calcTab?'primary':''}" onclick="calcTab='${k}';renderRechner()">${l}</button>`).join('')}
     </div>
     <div id="calcBody"></div>`;
-  ({netz:calcNetz,pert:calcPert,nwa:calcNwa,wirt:calcWirt,kalk:calcKalk,kap:calcKap,risk:calcRisk})[calcTab]();
+  ({netz:calcNetz,npu:calcNpu,pert:calcPert,nwa:calcNwa,wirt:calcWirt,kalk:calcKalk,kap:calcKap,risk:calcRisk})[calcTab]();
 }
 
 /* --- Netzplan --- */
@@ -3866,6 +3905,319 @@ function runNetto(){
     Davon 50 % projektverfügbar: <b>${f(tage*8*0.5)} h</b><br>
     <span class="muted">In der Planung immer die Nettokapazität ansetzen, nie die Bruttoarbeitszeit laut Vertrag.</span>
   </div>`;
+}
+
+/* ===================== NETZPLAN-TRAINER ===================== */
+const NPU = [
+{t:'1 · Einstieg', lvl:'leicht', d:'Vier Vorgänge, eine einfache Verzweigung. Ideal zum ersten Durchrechnen.',
+ rows:[{id:'A',n:'Analyse',d:3,v:''},{id:'B',n:'Konzept',d:5,v:'A'},{id:'C',n:'Beschaffung',d:2,v:'A'},{id:'D',n:'Umsetzung',d:4,v:'B,C'}]},
+{t:'2 · Zwei Wege', lvl:'leicht', d:'Zwei parallele Stränge, die wieder zusammenlaufen. Achte auf das Maximum bei der Vorwärtsrechnung.',
+ rows:[{id:'A',n:'Vorbereitung',d:2,v:''},{id:'B',n:'Serverinstallation',d:6,v:'A'},{id:'C',n:'Clientimage',d:3,v:'A'},{id:'D',n:'Clienttest',d:2,v:'C'},{id:'E',n:'Integration',d:4,v:'B,D'}]},
+{t:'3 · Puffer verstehen', lvl:'mittel', d:'Hier weichen Gesamtpuffer und freier Puffer voneinander ab – die wichtigste Übung überhaupt.',
+ rows:[{id:'A',n:'Start',d:4,v:''},{id:'B',n:'Hauptstrang',d:6,v:'A'},{id:'C',n:'Nebenstrang 1',d:3,v:'A'},{id:'D',n:'Nebenstrang 2',d:2,v:'C'},{id:'E',n:'Hauptstrang 2',d:4,v:'B'},{id:'F',n:'Abschluss',d:5,v:'D,E'}]},
+{t:'4 · Drei parallele Wege', lvl:'mittel', d:'Achtung: Hier laufen zwei Wege gleichzeitig ohne Puffer – es gibt zwei kritische Pfade. Trage beim kritischen Pfad alle Vorgänge mit GP 0 ein.',
+ rows:[{id:'A',n:'Kickoff',d:2,v:''},{id:'B',n:'Netzwerk',d:8,v:'A'},{id:'C',n:'Server',d:5,v:'A'},{id:'D',n:'Clients',d:3,v:'A'},{id:'E',n:'Serverkonfiguration',d:4,v:'C'},{id:'F',n:'Clientrollout',d:6,v:'D'},{id:'G',n:'Abnahme',d:3,v:'B,E,F'}]},
+{t:'5 · Zwei Startvorgänge', lvl:'mittel', d:'Nicht jedes Projekt hat genau einen Startvorgang. Beide beginnen bei 0.',
+ rows:[{id:'A',n:'Ist-Analyse',d:5,v:''},{id:'B',n:'Marktrecherche',d:3,v:''},{id:'C',n:'Sollkonzept',d:6,v:'A,B'},{id:'D',n:'Ausschreibung',d:4,v:'B'},{id:'E',n:'Beschaffung',d:7,v:'C,D'},{id:'F',n:'Installation',d:5,v:'E'},{id:'G',n:'Schulung',d:2,v:'C'}]},
+{t:'6 · Zwei Endvorgänge', lvl:'schwer', d:'Zwei Vorgänge ohne Nachfolger. Beide bekommen als SEZ die Projektdauer.',
+ rows:[{id:'A',n:'Planung',d:4,v:''},{id:'B',n:'Hardware',d:6,v:'A'},{id:'C',n:'Software',d:5,v:'A'},{id:'D',n:'Aufbau',d:7,v:'B'},{id:'E',n:'Konfiguration',d:4,v:'C'},{id:'F',n:'Test',d:3,v:'D,E'},{id:'G',n:'Dokumentation',d:2,v:'E'},{id:'H',n:'Abnahme',d:2,v:'F'}]},
+{t:'7 · Prüfungsformat', lvl:'schwer', d:'Umfang und Verzweigungsgrad wie in einer typischen AP1-Aufgabe.',
+ rows:[{id:'A',n:'Projektstart',d:3,v:''},{id:'B',n:'Anforderungsanalyse',d:6,v:'A'},{id:'C',n:'Standortbegehung',d:2,v:'A'},{id:'D',n:'Feinkonzept',d:5,v:'B,C'},{id:'E',n:'Angebotsvergleich',d:4,v:'B'},{id:'F',n:'Bestellung',d:8,v:'D,E'},{id:'G',n:'Verkabelung',d:6,v:'C'},{id:'H',n:'Montage',d:4,v:'F,G'},{id:'I',n:'Inbetriebnahme',d:3,v:'H'}]},
+{t:'8 · Rollout groß', lvl:'schwer', d:'Neun Vorgänge mit mehrfachen Zusammenführungen. Zeit nehmen und sauber tabellieren.',
+ rows:[{id:'A',n:'Inventur',d:5,v:''},{id:'B',n:'Kompatibilitätstest',d:4,v:'A'},{id:'C',n:'Beschaffung',d:10,v:'A'},{id:'D',n:'Image erstellen',d:6,v:'B'},{id:'E',n:'Pilot',d:5,v:'D'},{id:'F',n:'Auswertung Pilot',d:2,v:'E'},{id:'G',n:'Rollout Standort 1',d:9,v:'C,F'},{id:'H',n:'Rollout Standort 2',d:6,v:'G'},{id:'I',n:'Schulung',d:3,v:'F'},{id:'J',n:'Übergabe',d:2,v:'H,I'}]},
+{t:'9 · IHK-Aufgabe Netzumbau', lvl:'prüfungsnah', d:'Originalnaher Aufgabentyp: Umbau eines Firmennetzes mit elf Vorgängen und drei Zusammenführungen. Dauern in Stunden. Zusatzfrage: Vorgang H verzögert sich um 4 Stunden – ändert sich das Projektende?',
+ rows:[{id:'A',n:'Ist-Analyse',d:2,v:''},{id:'B',n:'Soll-Konzept',d:4,v:'A'},{id:'C',n:'Beschaffung neuer Server',d:3,v:'B'},{id:'D',n:'Installation strukturierter Verkabelung',d:8,v:'B'},{id:'E',n:'Datensicherung',d:2,v:'B'},{id:'F',n:'Dokumentation des Netzwerkes',d:5,v:'B'},{id:'G',n:'Installation neuer Server',d:4,v:'C,D'},{id:'H',n:'Abbau alter Infrastruktur',d:1,v:'E'},{id:'I',n:'Einrichtung Clients',d:3,v:'G,H'},{id:'J',n:'Funktionstest',d:1,v:'I'},{id:'K',n:'Übergabe und Einweisung',d:2,v:'F,J'}]}
+];
+
+/* Berechnung eines Netzplans – liefert Kennzahlen je Vorgang */
+function npSolve(rows){
+  const map={}; rows.forEach(r=>map[r.id]={...r, pre:String(r.v||'').split(',').map(x=>x.trim()).filter(Boolean)});
+  const ids=Object.keys(map), order=[], seen={};
+  const visit=id=>{ if(seen[id])return; seen[id]=1; map[id].pre.forEach(visit); if(!order.includes(id))order.push(id); };
+  ids.forEach(id=>{ if(!seen[id]) visit(id); });
+  // sicherer topologischer Durchlauf
+  order.length=0; const fertig={};
+  while(order.length<ids.length){
+    let bewegt=false;
+    for(const id of ids){ if(fertig[id])continue;
+      if(map[id].pre.every(p=>fertig[p])){ fertig[id]=1; order.push(id); bewegt=true; } }
+    if(!bewegt) break;
+  }
+  order.forEach(id=>{ const v=map[id];
+    v.faz = v.pre.length ? Math.max(...v.pre.map(p=>map[p].fez)) : 0;
+    v.fez = v.faz + (+v.d||0); });
+  const dauer = Math.max(...ids.map(i=>map[i].fez));
+  ids.forEach(i=>map[i].succ = ids.filter(j=>map[j].pre.includes(i)));
+  [...order].reverse().forEach(id=>{ const v=map[id];
+    v.sez = v.succ.length ? Math.min(...v.succ.map(s=>map[s].saz)) : dauer;
+    v.saz = v.sez - (+v.d||0); });
+  ids.forEach(i=>{ const v=map[i];
+    v.gp = v.saz - v.faz;
+    v.fp = v.succ.length ? Math.min(...v.succ.map(s=>map[s].faz)) - v.fez : dauer - v.fez; });
+  return {map, order, dauer, krit: order.filter(i=>map[i].gp===0)};
+}
+
+/* Zufallsaufgabe erzeugen */
+function npuZufall(){
+  const n = 5 + Math.floor(Math.random()*4);
+  const rows=[];
+  for(let i=0;i<n;i++){
+    const id=String.fromCharCode(65+i);
+    let pre=[];
+    if(i>0){
+      const kandidaten=rows.map(r=>r.id);
+      const anzahl = i===1 ? 1 : (Math.random()<0.35 ? 2 : 1);
+      const misch=[...kandidaten].sort(()=>Math.random()-0.5);
+      pre = misch.slice(0, Math.min(anzahl, kandidaten.length));
+      // sicherstellen, dass der letzte Vorgang alles zusammenführt
+      if(i===n-1){ const offen = rows.filter(r=>!rows.some(x=>String(x.v).split(',').includes(r.id))).map(r=>r.id);
+                   pre = offen.length?offen:pre; }
+    }
+    rows.push({id, n:'Vorgang '+id, d:1+Math.floor(Math.random()*8), v:pre.join(',')});
+  }
+  return rows;
+}
+
+let NPU_ST = {idx:0, rows:JSON.parse(JSON.stringify(NPU[0].rows)), geprueft:false, loesung:false, titel:NPU[0].t, hinweis:NPU[0].d, lvl:NPU[0].lvl};
+function npuLoad(i){
+  NPU_ST = {idx:i, rows:JSON.parse(JSON.stringify(NPU[i].rows)), geprueft:false, loesung:false, titel:NPU[i].t, hinweis:NPU[i].d, lvl:NPU[i].lvl};
+  calcNpu();
+}
+function npuNeu(){
+  NPU_ST = {idx:-1, rows:npuZufall(), geprueft:false, loesung:false, titel:'Zufallsaufgabe', hinweis:'Zufällig erzeugter Netzplan. Struktur und Dauern ändern sich bei jedem Klick.', lvl:'zufällig'};
+  calcNpu();
+}
+/* Layout für das Vorgangsknotendiagramm */
+const NPD = {W:142, H:98, GX:74, GY:26};
+function npLayout(sol){
+  const {map, order} = sol;
+  const col = {};
+  order.forEach(id => { col[id] = map[id].pre.length ? Math.max(...map[id].pre.map(p=>col[p]))+1 : 0; });
+  const cols = Math.max(...Object.values(col)) + 1;
+  const proSpalte = {}, reihe = {};
+  order.forEach(id => { const c = col[id]; proSpalte[c] = proSpalte[c] || []; reihe[id] = proSpalte[c].length; proSpalte[c].push(id); });
+  const maxR = Math.max(...Object.values(proSpalte).map(a=>a.length));
+  const pos = {};
+  order.forEach(id => {
+    const c = col[id], n = proSpalte[c].length;
+    const offset = (maxR - n) / 2;
+    pos[id] = { x: 8 + c*(NPD.W+NPD.GX), y: 8 + (offset + reihe[id])*(NPD.H+NPD.GY) };
+  });
+  return { pos, breite: 16 + cols*(NPD.W+NPD.GX) - NPD.GX, hoehe: 16 + maxR*(NPD.H+NPD.GY) - NPD.GY };
+}
+
+function npDiagramm(st, sol){
+  const lay = npLayout(sol);
+  const idx = {}; st.rows.forEach((r,j)=>idx[r.id]=j);
+  const pfeile = [];
+  st.rows.forEach(r=>{
+    (String(r.v||'').split(',').map(x=>x.trim()).filter(Boolean)).forEach(p=>{
+      const a = lay.pos[p], b = lay.pos[r.id]; if(!a||!b) return;
+      const x1 = a.x + NPD.W, y1 = a.y + NPD.H/2, x2 = b.x - 6, y2 = b.y + NPD.H/2;
+      const mx = (x1 + x2) / 2;
+      pfeile.push(`<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" fill="none" stroke="#4a6b8a" stroke-width="1.6" marker-end="url(#npArrow)"/>`);
+    });
+  });
+  const val = (id,f) => st.loesung ? sol.map[id][f] : '';
+  const stil = st.loesung ? 'color:var(--teal)' : '';
+  return `
+  <div class="npwrap">
+    <div class="npcanvas" style="width:${lay.breite}px;height:${lay.hoehe}px">
+      <svg width="${lay.breite}" height="${lay.hoehe}" style="position:absolute;inset:0">
+        <defs><marker id="npArrow" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+          <polygon points="0 0, 9 3.5, 0 7" fill="#4a6b8a"/></marker></defs>
+        ${pfeile.join('')}
+      </svg>
+      ${st.rows.map(r=>{const p=lay.pos[r.id]; const j=idx[r.id]; return `
+        <div class="npnode" style="left:${p.x}px;top:${p.y}px">
+          <div class="npn-out">
+            <input id="u_faz_${j}" type="number" inputmode="numeric" title="FAZ" value="${val(r.id,'faz')}" style="${stil}">
+            <input id="u_fez_${j}" type="number" inputmode="numeric" title="FEZ" value="${val(r.id,'fez')}" style="${stil}">
+          </div>
+          <div class="npn-box">
+            <div class="npn-name" title="${esc(r.n)}"><b>${esc(r.id)}</b> ${esc(r.n)}</div>
+            <div class="npn-mid">
+              <span title="Dauer">${r.d}</span>
+              <input id="u_gp_${j}" type="number" inputmode="numeric" title="GP" value="${val(r.id,'gp')}" style="${stil}">
+              <input id="u_fp_${j}" type="number" inputmode="numeric" title="FP" value="${val(r.id,'fp')}" style="${stil}">
+            </div>
+          </div>
+          <div class="npn-out">
+            <input id="u_saz_${j}" type="number" inputmode="numeric" title="SAZ" value="${val(r.id,'saz')}" style="${stil}">
+            <input id="u_sez_${j}" type="number" inputmode="numeric" title="SEZ" value="${val(r.id,'sez')}" style="${stil}">
+          </div>
+        </div>`}).join('')}
+    </div>
+  </div>
+  <p class="small muted" style="margin:.4rem 0 0">Bei schmalem Bildschirm lässt sich das Diagramm seitlich verschieben.</p>`;
+}
+
+function npLegende(){
+  return `
+  <div class="calcbox" style="max-width:230px">
+    <div class="eyebrow">Legende</div>
+    <div class="npnode" style="position:relative;left:0;top:0;margin:.2rem auto 0">
+      <div class="npn-out"><span class="npn-lab">FAZ</span><span class="npn-lab">FEZ</span></div>
+      <div class="npn-box">
+        <div class="npn-name">Vorgang</div>
+        <div class="npn-mid"><span>Dauer</span><span>GP</span><span>FP</span></div>
+      </div>
+      <div class="npn-out"><span class="npn-lab">SAZ</span><span class="npn-lab">SEZ</span></div>
+    </div>
+  </div>`;
+}
+
+let npuView = 'diagramm';
+function calcNpu(){
+  const st = NPU_ST, sol = npSolve(st.rows);
+  const felder = ['faz','fez','saz','sez','gp'];
+  const kopf = {faz:'FAZ',fez:'FEZ',saz:'SAZ',sez:'SEZ',gp:'GP'};
+  $('#calcBody').innerHTML = `
+  <div class="card">
+    <h3>Netzplan-Trainer</h3>
+    <p class="small muted">Vorgangsknotennetz in der Darstellung, wie sie in IHK-Aufgaben verwendet wird. Trage die Werte in die Knoten ein und lass sie feldweise prüfen.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin:.8rem 0">
+      ${NPU.map((a,i)=>`<button class="btn sm ${st.idx===i?'primary':''}" onclick="npuLoad(${i})">${a.t}</button>`).join('')}
+      <button class="btn sm ${st.idx===-1?'primary':''}" onclick="npuNeu()">🎲 Zufallsaufgabe</button>
+    </div>
+
+    <div class="note"><b>${st.titel} · ${st.lvl}</b>${st.hinweis}</div>
+
+    <div class="eyebrow" style="margin-top:1rem">Aufgabenstellung</div>
+    <div class="tblwrap"><table>
+      <tr><th>Vorgang</th><th>Beschreibung</th><th>Dauer</th><th>Vorgänger</th></tr>
+      ${st.rows.map(r=>`<tr><td class="mono"><b>${esc(r.id)}</b></td><td>${esc(r.n)}</td><td class="mono">${r.d}</td><td class="mono">${esc(r.v)||'–'}</td></tr>`).join('')}
+    </table></div>
+
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;margin-top:1rem">
+      ${npLegende()}
+      <div style="flex:1;min-width:200px">
+        <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.5rem">
+          <button class="btn sm ${npuView==='diagramm'?'primary':''}" onclick="npuView='diagramm';calcNpu()">Diagramm</button>
+          <button class="btn sm ${npuView==='tabelle'?'primary':''}" onclick="npuView='tabelle';calcNpu()">Tabelle</button>
+        </div>
+        <p class="small muted" style="margin:0">Reihenfolge: erst alle FAZ und FEZ von links nach rechts, dann alle SEZ und SAZ von rechts nach links, zuletzt die Puffer.</p>
+      </div>
+    </div>
+
+    ${npuView==='diagramm' ? npDiagramm(st, sol) : `
+    <div class="tblwrap" style="margin-top:.8rem"><table>
+      <tr><th>Vorgang</th><th>Dauer</th><th>Vorgänger</th>${felder.map(f=>`<th>${kopf[f]}</th>`).join('')}<th>FP</th></tr>
+      ${st.rows.map((r,j)=>`<tr>
+        <td><b>${esc(r.id)}</b></td><td class="mono">${r.d}</td><td class="mono">${esc(r.v)||'–'}</td>
+        ${[...felder,'fp'].map(f=>`<td><input id="u_${f}_${j}" type="number" inputmode="numeric"
+            style="width:5.5ch;padding:.3rem .2rem;text-align:center${st.loesung?';color:var(--teal)':''}"
+            value="${st.loesung?sol.map[r.id][f]:''}"></td>`).join('')}
+      </tr>`).join('')}
+    </table></div>`}
+
+    <div class="grid g2" style="margin-top:1rem">
+      <div class="field"><label class="fl">Projektdauer</label>
+        <input id="u_dauer" type="number" inputmode="numeric" value="${st.loesung?sol.dauer:''}" style="${st.loesung?'color:var(--teal)':''}"></div>
+      <div class="field"><label class="fl">Kritischer Pfad (z. B. A,B,D)</label>
+        <input id="u_krit" value="${st.loesung?sol.krit.join(','):''}" style="${st.loesung?'color:var(--teal)':''}"></div>
+    </div>
+
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <button class="btn primary" onclick="npuCheck()">Antworten prüfen</button>
+      <button class="btn" onclick="npuTipp()">Tipp</button>
+      <button class="btn ghost" onclick="NPU_ST.loesung=true;calcNpu()">Lösung anzeigen</button>
+      <button class="btn ghost sm" onclick="NPU_ST.loesung=false;NPU_ST.geprueft=false;calcNpu()">Leeren</button>
+    </div>
+    <div id="npuOut"></div>
+    ${st.loesung?`<div class="calcbox">
+      <div class="eyebrow">Lösungsweg</div>
+      <p class="small" style="margin:0 0 .5rem">Projektdauer <b>${sol.dauer}</b> Zeiteinheiten · kritischer Pfad <b>${sol.krit.join(' → ')}</b></p>
+      <div class="tblwrap"><table>
+        <tr><th>Vorgang</th><th>FAZ</th><th>FEZ</th><th>SAZ</th><th>SEZ</th><th>GP</th><th>FP</th><th>Rechenweg</th></tr>
+        ${sol.order.map(id=>{const v=sol.map[id];return `<tr${v.gp===0?' style="color:var(--amber)"':''}>
+          <td><b>${id}</b></td><td>${v.faz}</td><td>${v.fez}</td><td>${v.saz}</td><td>${v.sez}</td><td>${v.gp}</td><td>${v.fp}</td>
+          <td class="small">${v.pre.length?`FAZ = max(${v.pre.map(p=>sol.map[p].fez).join('; ')}) = ${v.faz}`:'Startvorgang, FAZ = 0'} · ${v.succ.length?`SEZ = min(${v.succ.map(s=>sol.map[s].saz).join('; ')}) = ${v.sez}`:`Endvorgang, SEZ = ${sol.dauer}`} · GP = ${v.saz} − ${v.faz} = ${v.gp} · FP = ${v.succ.length?`min(${v.succ.map(s=>sol.map[s].faz).join('; ')})`:sol.dauer} − ${v.fez} = ${v.fp}</td>
+        </tr>`}).join('')}
+      </table></div>
+      <div class="gantt" style="padding:0;margin-top:.8rem">
+        ${sol.order.map(id=>{const v=sol.map[id];return `
+          <div class="gantt-row"><span>${id}</span><div class="gantt-track">
+            <div class="gantt-bar ${v.gp===0?'crit':''}" style="left:${v.faz/sol.dauer*100}%;width:${Math.max(v.d/sol.dauer*100,1.5)}%"></div>
+            ${v.gp>0?`<div style="position:absolute;top:5px;height:3px;background:#31527a;left:${v.fez/sol.dauer*100}%;width:${v.gp/sol.dauer*100}%"></div>`:''}
+          </div></div>`}).join('')}
+        <p class="small muted" style="margin:.5rem 0 0">Gelb = kritischer Pfad · blaue Linie = Gesamtpuffer</p>
+      </div>
+    </div>`:''}
+  </div>`;
+}
+
+function npuCheck(){
+  const st = NPU_ST, sol = npSolve(st.rows);
+  const felder = ['faz','fez','saz','sez','gp','fp'];
+  let richtig=0, gesamt=0, leer=0;
+  const fehlerarten = new Set();
+  st.rows.forEach((r,j)=>{
+    felder.forEach(f=>{
+      const el = document.getElementById(`u_${f}_${j}`); if(!el) return;
+      gesamt++;
+      const wert = el.value.trim();
+      if(wert===''){ leer++; el.style.borderColor=''; el.style.background=''; return; }
+      const ok = Number(wert)===sol.map[r.id][f];
+      el.style.borderColor = ok?'var(--ok)':'var(--red)';
+      el.style.background = ok?'rgba(74,222,128,.15)':'rgba(248,113,113,.15)';
+      if(ok) richtig++; else {
+        const v=sol.map[r.id];
+        if(f==='faz' && v.pre.length>1) fehlerarten.add('Bei mehreren Vorgängern gilt für den FAZ das <b>Maximum</b> ihrer FEZ.');
+        if(f==='faz' && !v.pre.length) fehlerarten.add('Startvorgänge ohne Vorgänger beginnen bei <b>FAZ = 0</b>.');
+        if(f==='fez') fehlerarten.add('FEZ = FAZ + Dauer.');
+        if(f==='sez' && v.succ.length>1) fehlerarten.add('Bei mehreren Nachfolgern gilt für den SEZ das <b>Minimum</b> ihrer SAZ.');
+        if(f==='sez' && !v.succ.length) fehlerarten.add('Vorgänge ohne Nachfolger erhalten als SEZ die <b>Projektdauer</b>.');
+        if(f==='saz') fehlerarten.add('SAZ = SEZ − Dauer.');
+        if(f==='gp') fehlerarten.add('Gesamtpuffer GP = SAZ − FAZ (gleichwertig SEZ − FEZ).');
+        if(f==='fp') fehlerarten.add('Freier Puffer FP = kleinster FAZ der Nachfolger − eigener FEZ. Kontrolle: FP ist nie größer als GP.');
+      }
+    });
+  });
+  const dEl = document.getElementById('u_dauer'), kEl = document.getElementById('u_krit');
+  let extra = '';
+  if(dEl && dEl.value.trim()!==''){ gesamt++; const ok = Number(dEl.value)===sol.dauer;
+    dEl.style.borderColor = ok?'var(--ok)':'var(--red)'; if(ok) richtig++;
+    else extra += '<li>Die Projektdauer ist der größte FEZ aller Vorgänge.</li>'; }
+  if(kEl && kEl.value.trim()!==''){ gesamt++;
+    const eing = kEl.value.toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean).sort().join(',');
+    const ok = eing === [...sol.krit].sort().join(',');
+    kEl.style.borderColor = ok?'var(--ok)':'var(--red)'; if(ok) richtig++;
+    else extra += '<li>Zum kritischen Pfad gehören <b>alle</b> Vorgänge mit Gesamtpuffer 0 – auch parallele Zweige, wenn beide ohne Puffer sind.</li>'; }
+
+  const bearbeitet = gesamt - leer;
+  const quote = bearbeitet>0 ? Math.round(richtig/bearbeitet*100) : 0;
+  $('#npuOut').innerHTML = `
+    <div class="calcbox">
+      <p class="result" style="margin:0 0 .5rem">Richtig: <b>${richtig}</b> von ${bearbeitet} ausgefüllten Feldern (${quote} %)${leer?` · ${leer} Felder noch leer`:''}</p>
+      <div class="bar"><i style="width:${quote}%;background:${quote>=80?'var(--teal)':quote>=50?'var(--amber)':'var(--red)'}"></i></div>
+      ${(fehlerarten.size||extra) ? `<div class="note warn" style="margin-bottom:0"><b>Hinweise zu deinen Fehlern</b><ul class="tight" style="margin-bottom:0">
+        ${[...fehlerarten].map(f=>`<li>${f}</li>`).join('')}${extra}</ul></div>`
+        : (leer===0 ? `<div class="note" style="margin-bottom:0"><b>Alles richtig</b>Nimm die nächste Aufgabe oder erzeuge dir eine Zufallsaufgabe.</div>` : '')}
+    </div>`;
+}
+
+function npuTipp(){
+  const st = NPU_ST, sol = npSolve(st.rows);
+  const felder=['faz','fez','sez','saz','gp','fp'];
+  let ziel=null;
+  for(const f of felder){ for(let j=0;j<st.rows.length;j++){
+    const el=document.getElementById(`u_${f}_${j}`);
+    if(el && el.value.trim()===''){ ziel={f,j,id:st.rows[j].id}; break; } } if(ziel) break; }
+  if(!ziel) return $('#npuOut').innerHTML = `<div class="note"><b>Alles ausgefüllt</b>Lass die Werte jetzt prüfen.</div>`;
+  const v = sol.map[ziel.id];
+  const texte = {
+    faz: v.pre.length ? `Vorgang <b>${ziel.id}</b> hat die Vorgänger ${v.pre.join(', ')}. Nimm das <b>größte</b> FEZ dieser Vorgänger.`
+                      : `Vorgang <b>${ziel.id}</b> hat keine Vorgänger, also ist FAZ = 0.`,
+    fez: `FEZ von <b>${ziel.id}</b> = FAZ + Dauer (${v.d}).`,
+    sez: v.succ.length ? `Vorgang <b>${ziel.id}</b> hat die Nachfolger ${v.succ.join(', ')}. Nimm das <b>kleinste</b> SAZ dieser Nachfolger.`
+                       : `Vorgang <b>${ziel.id}</b> hat keinen Nachfolger. Sein SEZ ist die Projektdauer (${sol.dauer}).`,
+    saz: `SAZ von <b>${ziel.id}</b> = SEZ − Dauer (${v.d}). Die Rückwärtsrechnung läuft von rechts nach links.`,
+    gp: `Gesamtpuffer von <b>${ziel.id}</b> = SAZ − FAZ. Ergibt sich 0, liegt der Vorgang auf dem kritischen Pfad.`,
+    fp: v.succ.length ? `Freier Puffer von <b>${ziel.id}</b> = kleinster FAZ der Nachfolger (${v.succ.join(', ')}) minus eigener FEZ.`
+                      : `<b>${ziel.id}</b> hat keinen Nachfolger. Der freie Puffer ist Projektdauer minus eigener FEZ.`
+  };
+  $('#npuOut').innerHTML = `<div class="note"><b>Nächster Schritt</b>${texte[ziel.f]}</div>`;
 }
 
 /* --- Risikomatrix --- */
