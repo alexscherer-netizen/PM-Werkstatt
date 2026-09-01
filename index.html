@@ -3650,14 +3650,8 @@ function runNetz(){
     Kritischer Pfad: <b>${krit.join(' → ')||'–'}</b></p>
   </div>
   <div class="calcbox">
-    <div class="eyebrow">Balkenplan</div>
-    ${order.map(i=>{const v=map[i];return `
-      <div class="gantt-row"><span>${esc(v.id)}</span>
-        <div class="gantt-track">
-          <div class="gantt-bar ${v.gp===0?'crit':''}" style="left:${v.faz/max*100}%;width:${Math.max(v.d/max*100,1.5)}%"></div>
-        </div>
-      </div>`}).join('')}
-    <p class="small muted" style="margin:.5rem 0 0">Gelbe Balken liegen auf dem kritischen Pfad (Gesamtpuffer 0).</p>
+    <div class="eyebrow">Gantt-Diagramm (Balkenplan)</div>
+    ${npGantt(rows, sol)}
   </div>`;
 }
 
@@ -4153,14 +4147,7 @@ function calcNpu(){
           <td class="small">${v.pre.length?`FAZ = max(${v.pre.map(p=>sol.map[p].fez).join('; ')}) = ${v.faz}`:'Startvorgang, FAZ = 0'} · ${v.succ.length?`SEZ = min(${v.succ.map(s=>sol.map[s].saz).join('; ')}) = ${v.sez}`:`Endvorgang, SEZ = ${sol.dauer}`} · GP = ${v.saz} − ${v.faz} = ${v.gp} · FP = ${v.succ.length?`min(${v.succ.map(s=>sol.map[s].faz).join('; ')})`:sol.dauer} − ${v.fez} = ${v.fp}</td>
         </tr>`}).join('')}
       </table></div>
-      <div class="gantt" style="padding:0;margin-top:.8rem">
-        ${sol.order.map(id=>{const v=sol.map[id];return `
-          <div class="gantt-row"><span>${id}</span><div class="gantt-track">
-            <div class="gantt-bar ${v.gp===0?'crit':''}" style="left:${v.faz/sol.dauer*100}%;width:${Math.max(v.d/sol.dauer*100,1.5)}%"></div>
-            ${v.gp>0?`<div style="position:absolute;top:5px;height:3px;background:#31527a;left:${v.fez/sol.dauer*100}%;width:${v.gp/sol.dauer*100}%"></div>`:''}
-          </div></div>`}).join('')}
-        <p class="small muted" style="margin:.5rem 0 0">Gelb = kritischer Pfad · blaue Linie = Gesamtpuffer</p>
-      </div>
+      <div style="margin-top:.9rem"><div class="eyebrow">Gantt-Diagramm</div>${npGantt(st.rows, sol)}</div>
     </div>`:''}
   </div>`;
 }
@@ -4278,6 +4265,70 @@ function npDiagrammStatisch(rows, sol){
     </div>
   </div>
   <p class="small muted" style="margin:.4rem 0 0">Gelb umrandet und gelb verbunden: der kritische Pfad (Gesamtpuffer 0). Knotenaufbau oben FAZ und FEZ, Mitte Dauer, GP und FP, unten SAZ und SEZ.</p>`;
+}
+
+/* Vollwertiges Gantt-Diagramm mit Zeitachse, Puffern und kritischem Pfad */
+function npGantt(rows, sol, einheit){
+  einheit = einheit || 'ZE';
+  const d = sol.dauer || 1;
+  const labelW = 156, rowH = 28, headH = 30, padR = 24;
+  const px = Math.max(13, Math.min(40, 660 / d));
+  const chartW = d * px;
+  const W = labelW + chartW + padR;
+  const liste = [...sol.order].sort((a,b)=> sol.map[a].faz - sol.map[b].faz || (a>b?1:-1));
+  const H = headH + liste.length * rowH + 30;
+  const schritt = d <= 16 ? 1 : d <= 40 ? 2 : d <= 90 ? 5 : 10;
+  const x = t => labelW + t * px;
+
+  let ticks = '';
+  for(let t = 0; t <= d; t += schritt){
+    ticks += `<line x1="${x(t)}" y1="${headH-6}" x2="${x(t)}" y2="${headH + liste.length*rowH}" style="stroke:#22384f;stroke-width:1"/>
+              <text x="${x(t)}" y="${headH-12}" text-anchor="middle" style="fill:#6b8299;font-size:10px;font-family:var(--mono)">${t}</text>`;
+  }
+  if((d % schritt) !== 0){
+    ticks += `<line x1="${x(d)}" y1="${headH-6}" x2="${x(d)}" y2="${headH + liste.length*rowH}" style="stroke:#22384f"/>
+              <text x="${x(d)}" y="${headH-12}" text-anchor="middle" style="fill:#6b8299;font-size:10px;font-family:var(--mono)">${d}</text>`;
+  }
+
+  const balken = liste.map((id,i)=>{
+    const v = sol.map[id], y = headH + i*rowH + 5, h = rowH - 12;
+    const k = v.gp === 0;
+    const bw = Math.max(v.d * px, 2);
+    const puffer = v.gp > 0 ? `<rect x="${x(v.fez)}" y="${y+2}" width="${v.gp*px}" height="${h-4}" rx="2"
+        style="fill:rgba(45,212,191,.13);stroke:#31527a;stroke-width:1;stroke-dasharray:3 2"/>` : '';
+    const beschriftung = bw > 26 ? `<text x="${x(v.faz)+bw/2}" y="${y+h/2+3.5}" text-anchor="middle"
+        style="fill:${k?'#3d2a06':'#04231f'};font-size:10px;font-weight:600;font-family:var(--mono)">${v.d}</text>` : '';
+    return `
+    <g>
+      <text x="8" y="${y+h/2+4}" style="fill:${k?'#f5b74e':'#e6edf5'};font-size:11.5px">
+        <tspan style="font-weight:600">${esc(id)}</tspan><tspan dx="5" style="fill:#9db0c6">${esc((sol.map[id].n||'').slice(0,17))}</tspan></text>
+      <line x1="${labelW-8}" y1="${y+h/2}" x2="${labelW}" y2="${y+h/2}" style="stroke:#22384f"/>
+      ${puffer}
+      <rect x="${x(v.faz)}" y="${y}" width="${bw}" height="${h}" rx="3"
+        style="fill:${k?'#f5b74e':'#2dd4bf'}"><title>${esc(id)}: ${v.faz} bis ${v.fez}, GP ${v.gp}, FP ${v.fp}</title></rect>
+      ${beschriftung}
+    </g>`;
+  }).join('');
+
+  const ende = `<line x1="${x(d)}" y1="${headH-8}" x2="${x(d)}" y2="${headH + liste.length*rowH + 4}"
+      style="stroke:#f87171;stroke-width:1.4;stroke-dasharray:4 3"/>
+    <text x="${x(d)}" y="${headH + liste.length*rowH + 18}" text-anchor="end"
+      style="fill:#f87171;font-size:10px;font-family:var(--mono)">Ende ${d} ${einheit}</text>`;
+
+  return `
+  <div class="npwrap">
+    <svg width="${W}" height="${H}" style="display:block">
+      <text x="8" y="${headH-12}" style="fill:#6b8299;font-size:10px;font-family:var(--mono)">Vorgang</text>
+      <line x1="${labelW}" y1="${headH-6}" x2="${W-padR+8}" y2="${headH-6}" style="stroke:#22384f"/>
+      ${ticks}${balken}${ende}
+    </svg>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:1rem;margin-top:.5rem;font-size:.78rem;color:var(--ink-dim)">
+    <span><span style="display:inline-block;width:14px;height:9px;background:#f5b74e;border-radius:2px;vertical-align:middle"></span> kritischer Pfad</span>
+    <span><span style="display:inline-block;width:14px;height:9px;background:#2dd4bf;border-radius:2px;vertical-align:middle"></span> Vorgang mit Puffer</span>
+    <span><span style="display:inline-block;width:14px;height:9px;background:rgba(45,212,191,.13);border:1px dashed #31527a;vertical-align:middle"></span> Gesamtpuffer</span>
+    <span>Zahl im Balken = Dauer · Achse in ${einheit}</span>
+  </div>`;
 }
 
 /* ===================== TRAINER-RAHMEN ===================== */
