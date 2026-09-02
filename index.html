@@ -3694,7 +3694,10 @@ function calcNwa(){
     <h3>Nutzwertanalyse</h3>
     <p class="small muted">Gewichte in Prozent, Summe muss 100 ergeben. Bewertung auf einer Skala von 1 bis 10.</p>
     <div class="tblwrap"><table>
-      <tr><th>Kriterium</th><th>Gewicht %</th>${NWA.alt.map((a,j)=>`<th><input value="${esc(a)}" oninput="NWA.alt[${j}]=this.value" style="min-width:8ch;padding:.3rem"></th>`).join('')}<th></th></tr>
+      <tr><th>Kriterium</th><th>Gewicht %</th>${NWA.alt.map((a,j)=>`<th><div style="display:flex;gap:.2rem;align-items:center">
+          <input value="${esc(a)}" oninput="NWA.alt[${j}]=this.value" style="min-width:7ch;padding:.3rem">
+          ${NWA.alt.length>2?`<button class="btn sm ghost" style="padding:.2rem .35rem" title="Alternative entfernen" onclick="nwaAltWeg(${j})">✕</button>`:''}
+        </div></th>`).join('')}<th></th></tr>
       ${NWA.krit.map((k,i)=>`<tr>
         <td><input value="${esc(k.n)}" oninput="NWA.krit[${i}].n=this.value" style="min-width:11ch"></td>
         <td><input type="number" value="${k.g}" oninput="NWA.krit[${i}].g=+this.value" style="width:7ch;padding:.35rem .3rem"></td>
@@ -3702,6 +3705,7 @@ function calcNwa(){
         <td><button class="btn sm ghost" onclick="NWA.krit.splice(${i},1);NWA.b.splice(${i},1);calcNwa()">✕</button></td>
       </tr>`).join('')}
     </table></div>
+    <p class="small muted" style="margin:.5rem 0 0">Kriterien und Alternativen lassen sich über das ✕ entfernen. Es müssen mindestens zwei Alternativen bestehen bleiben.</p>
     <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem">
       <button class="btn sm" onclick="NWA.krit.push({n:'Neues Kriterium',g:0});NWA.b.push(NWA.alt.map(()=>5));calcNwa()">+ Kriterium</button>
       <button class="btn sm" onclick="NWA.alt.push('Alternative '+(NWA.alt.length+1));NWA.b.forEach(r=>r.push(5));calcNwa()">+ Alternative</button>
@@ -3725,6 +3729,78 @@ function runNwa(){
     </table></div>
     <p class="result" style="margin:.6rem 0 0">Empfehlung: <b>${esc(NWA.alt[best])}</b> mit ${f(werte[best])} Punkten.</p>
     <p class="small muted" style="margin:.4rem 0 0">Liegt der Abstand unter etwa 5 %, sollte die Entscheidung über eine Sensitivitätsbetrachtung abgesichert werden.</p>
+  </div>` + nwaDiagramm(NWA.krit.map(k=>k.n), NWA.krit.map(k=>k.g), NWA.b, NWA.alt, werte);
+}
+
+
+function nwaAltWeg(j){
+  if(NWA.alt.length<=2) return;
+  NWA.alt.splice(j,1);
+  NWA.b.forEach(r=>r.splice(j,1));
+  calcNwa();
+}
+
+/* Diagramm zur Nutzwertanalyse */
+const NWAFARBEN = ['#2dd4bf','#f5b74e','#a78bfa','#38bdf8','#4ade80','#f472b6','#fb923c','#94a3b8'];
+function nwaDiagramm(krit, gew, bew, alt, werte){
+  const labelW = 104, barH = 26, gap = 16, chartW = 480, padR = 60;
+  const skala = Math.max(10, Math.ceil(Math.max(...werte)));
+  const x = v => labelW + v/skala*chartW;
+  const H1 = 26 + alt.length*(barH+gap);
+  const best = werte.indexOf(Math.max(...werte));
+
+  let achse = '';
+  for(let t=0; t<=skala; t+=(skala>12?2:1)){
+    achse += `<line x1="${x(t)}" y1="18" x2="${x(t)}" y2="${H1-8}" style="stroke:#22384f"/>
+              <text x="${x(t)}" y="12" text-anchor="middle" style="fill:#6b8299;font-size:10px;font-family:var(--mono)">${t}</text>`;
+  }
+  const zeilen = alt.map((a,j)=>{
+    const y = 26 + j*(barH+gap);
+    let lauf = 0;
+    const segs = krit.map((k,i)=>{
+      const teil = (+gew[i]||0)/100 * (+bew[i][j]||0);
+      const x1 = x(lauf), br = Math.max(x(lauf+teil)-x1, 0);
+      lauf += teil;
+      const txt = br>30 ? `<text x="${x1+br/2}" y="${y+barH/2+4}" text-anchor="middle" style="fill:#08131a;font-size:10px;font-weight:600;font-family:var(--mono)">${teil.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})}</text>` : '';
+      return `<rect x="${x1}" y="${y}" width="${br}" height="${barH}" style="fill:${NWAFARBEN[i%NWAFARBEN.length]}">
+        <title>${esc(k)}: ${bew[i][j]} × ${gew[i]} % = ${teil.toFixed(2)}</title></rect>${txt}`;
+    }).join('');
+    return `<g>
+      <text x="6" y="${y+barH/2+4}" style="fill:${j===best?'#2dd4bf':'#e6edf5'};font-size:11.5px;font-weight:${j===best?'600':'400'}">${esc(String(a).slice(0,14))}</text>
+      ${segs}
+      <text x="${x(lauf)+8}" y="${y+barH/2+4}" style="fill:${j===best?'#2dd4bf':'#9db0c6'};font-size:11.5px;font-weight:600;font-family:var(--mono)">${lauf.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})}</text>
+    </g>`;
+  }).join('');
+
+  // Zweites Diagramm: Bewertung je Kriterium im Vergleich
+  const kbarH = 11, kgap = 4, kzeile = krit.length ? (alt.length*(kbarH+kgap) + 14) : 0;
+  const H2 = 8 + krit.length*kzeile;
+  const vergleich = krit.map((k,i)=>{
+    const yTop = 8 + i*kzeile;
+    const balken = alt.map((a,j)=>{
+      const y = yTop + j*(kbarH+kgap);
+      const br = (+bew[i][j]||0)/10*chartW;
+      return `<rect x="${labelW}" y="${y}" width="${Math.max(br,1)}" height="${kbarH}" rx="2"
+                style="fill:${NWAFARBEN[i%NWAFARBEN.length]};opacity:${0.45+0.55*(j===0?1:0.55)}">
+              <title>${esc(String(a))}: ${bew[i][j]} von 10</title></rect>
+              <text x="${labelW+br+6}" y="${y+kbarH-1}" style="fill:#9db0c6;font-size:9.5px;font-family:var(--mono)">${bew[i][j]}</text>`;
+    }).join('');
+    return `<g><text x="6" y="${yTop+11}" style="fill:#9db0c6;font-size:10.5px">${esc(k.slice(0,15))}</text>
+      <text x="6" y="${yTop+23}" style="fill:#6b8299;font-size:9.5px;font-family:var(--mono)">${gew[i]} %</text>${balken}</g>`;
+  }).join('');
+
+  return `
+  <div class="calcbox">
+    <div class="eyebrow">Gesamtnutzwert nach Kriterien aufgeschlüsselt</div>
+    <div class="npwrap"><svg width="${labelW+chartW+padR}" height="${H1}" style="display:block">${achse}${zeilen}</svg></div>
+    <div style="display:flex;flex-wrap:wrap;gap:.7rem;margin-top:.5rem;font-size:.76rem;color:var(--ink-dim)">
+      ${krit.map((k,i)=>`<span><span style="display:inline-block;width:12px;height:9px;border-radius:2px;background:${NWAFARBEN[i%NWAFARBEN.length]};vertical-align:middle"></span> ${esc(k)} (${gew[i]} %)</span>`).join('')}
+    </div>
+  </div>
+  <div class="calcbox">
+    <div class="eyebrow">Bewertung je Kriterium im direkten Vergleich (Skala 1–10)</div>
+    <div class="npwrap"><svg width="${labelW+chartW+padR}" height="${H2}" style="display:block">${vergleich}</svg></div>
+    <p class="small muted" style="margin:.4rem 0 0">Je Kriterium eine Zeile, darin die Alternativen in der Reihenfolge ${alt.map(a=>esc(String(a))).join(', ')}. So sieht man auf einen Blick, wo eine Alternative ihren Vorsprung holt.</p>
   </div>`;
 }
 
