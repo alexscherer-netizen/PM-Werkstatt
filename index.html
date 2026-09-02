@@ -3729,7 +3729,9 @@ function runNwa(){
     </table></div>
     <p class="result" style="margin:.6rem 0 0">Empfehlung: <b>${esc(NWA.alt[best])}</b> mit ${f(werte[best])} Punkten.</p>
     <p class="small muted" style="margin:.4rem 0 0">Liegt der Abstand unter etwa 5 %, sollte die Entscheidung über eine Sensitivitätsbetrachtung abgesichert werden.</p>
-  </div>` + nwaDiagramm(NWA.krit.map(k=>k.n), NWA.krit.map(k=>k.g), NWA.b, NWA.alt, werte);
+  </div>`
+    + nwaRechenweg(NWA.krit.map(k=>k.n), NWA.krit.map(k=>k.g), NWA.b, NWA.alt, werte)
+    + nwaDiagramm(NWA.krit.map(k=>k.n), NWA.krit.map(k=>k.g), NWA.b, NWA.alt, werte);
 }
 
 
@@ -3738,6 +3740,75 @@ function nwaAltWeg(j){
   NWA.alt.splice(j,1);
   NWA.b.forEach(r=>r.splice(j,1));
   calcNwa();
+}
+
+
+/* Ausformulierter Rechenweg zur Nutzwertanalyse */
+function nwaRechenweg(krit, gew, bew, alt, werte){
+  const z2 = n => n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const gsum = gew.reduce((a,b)=>a+(+b||0),0);
+  const rang = alt.map((a,j)=>({a, j, w:werte[j]})).sort((x,y)=>y.w-x.w);
+  const best = rang[0], zweiter = rang[1];
+  const abstand = zweiter ? best.w - zweiter.w : 0;
+  const abstandProz = best.w ? abstand/best.w*100 : 0;
+  // Kriterium mit dem größten Unterschied zwischen Sieger und Zweitem
+  let entscheidend = null, maxDiff = -1;
+  if(zweiter) krit.forEach((k,i)=>{
+    const d = ((+gew[i]||0)/100)*((+bew[i][best.j]||0) - (+bew[i][zweiter.j]||0));
+    if(d > maxDiff){ maxDiff = d; entscheidend = {k, i, d}; }
+  });
+
+  return `
+  <div class="calcbox">
+    <div class="eyebrow">Rechenweg</div>
+    <p class="small" style="margin:0 0 .6rem">
+      <b>Schritt 1 – Gewichte prüfen.</b> Die Summe der Gewichte beträgt ${gsum} %.
+      ${gsum===100 ? 'Die Normierung auf 100 % ist erfüllt, die Nutzwerte sind vergleichbar.'
+                   : '<span style="color:var(--amber)">Die Summe weicht von 100 % ab. Die Rechnung wird trotzdem ausgeführt, die Nutzwerte sind aber nicht normiert und dürfen nicht mit anderen Analysen verglichen werden.</span>'}
+    </p>
+    <p class="small" style="margin:0 0 .6rem">
+      <b>Schritt 2 – Teilnutzen bilden.</b> Teilnutzen = Bewertung × Gewicht. Das Gewicht wird dabei als Dezimalzahl eingesetzt: 40 % entspricht 0,40.
+    </p>
+    <p class="small" style="margin:0 0 .3rem"><b>Schritt 3 – je Alternative aufsummieren.</b></p>
+    ${alt.map((a,j)=>`
+      <div style="margin:0 0 .55rem;padding-left:.6rem;border-left:2px solid ${j===best.j?'var(--teal)':'var(--line)'}">
+        <div class="small"><b>${esc(String(a))}</b></div>
+        <div class="mono small" style="color:var(--ink-dim);line-height:1.75">
+          ${krit.map((k,i)=>`${bew[i][j]} × ${z2((+gew[i]||0)/100)} = <span style="color:var(--ink)">${z2((+gew[i]||0)/100*(+bew[i][j]||0))}</span>`).join(' &nbsp;·&nbsp; ')}
+        </div>
+        <div class="mono small">Summe = ${krit.map((k,i)=>z2((+gew[i]||0)/100*(+bew[i][j]||0))).join(' + ')} = <b style="color:${j===best.j?'var(--teal)':'var(--ink)'}">${z2(werte[j])}</b></div>
+      </div>`).join('')}
+    <p class="small" style="margin:.2rem 0 .5rem"><b>Schritt 4 – Rangfolge bilden und bewerten.</b></p>
+    <div class="tblwrap"><table style="margin:0">
+      <tr><th>Rang</th><th>Alternative</th><th>Nutzwert</th><th>Abstand zum Sieger</th></tr>
+      ${rang.map((r,i)=>`<tr><td class="mono">${i+1}</td><td>${esc(String(r.a))}</td>
+        <td class="mono"><b style="${i===0?'color:var(--teal)':''}">${z2(r.w)}</b></td>
+        <td class="mono">${i===0?'–':'− '+z2(best.w-r.w)}</td></tr>`).join('')}
+    </table></div>
+    <p class="small" style="margin:.7rem 0 0">
+      <b>Ergebnis:</b> Empfohlen wird <b>${esc(String(best.a))}</b> mit ${z2(best.w)} Punkten.
+      ${zweiter ? `Der Vorsprung gegenüber ${esc(String(zweiter.a))} beträgt ${z2(abstand)} Punkte, also ${z2(abstandProz)} % des Siegerwerts. ` : ''}
+      ${zweiter ? (abstandProz < 5
+        ? '<span style="color:var(--amber)">Das ist ein knappes Ergebnis. Bereits eine kleine Änderung der Gewichte kann die Reihenfolge umkehren – eine Sensitivitätsbetrachtung und eine schriftliche Begründung der Gewichte sind hier zwingend.</span>'
+        : 'Der Abstand ist deutlich genug, um das Ergebnis als stabil anzusehen.') : ''}
+    </p>
+    ${zweiter ? `<p class="small" style="margin:.7rem 0 .3rem"><b>Schritt 5 – Woher kommt der Vorsprung?</b>
+      Differenz der Teilnutzen zwischen ${esc(String(best.a))} und ${esc(String(zweiter.a))} je Kriterium:</p>
+      <div class="tblwrap"><table style="margin:0">
+        <tr><th>Kriterium</th><th>Gewicht</th><th>Bewertungen</th><th>Differenz</th></tr>
+        ${krit.map((k,i)=>{const dd=((+gew[i]||0)/100)*((+bew[i][best.j]||0)-(+bew[i][zweiter.j]||0));
+          return `<tr><td>${esc(k)}</td><td class="mono">${gew[i]} %</td>
+            <td class="mono">${bew[i][best.j]} gegen ${bew[i][zweiter.j]}</td>
+            <td class="mono" style="color:${dd>0?'var(--ok)':dd<0?'var(--red)':'var(--ink-dim)'}">${dd>0?'+':''}${z2(dd)}</td></tr>`}).join('')}
+        <tr><td colspan="3"><b>Gesamtvorsprung</b></td><td class="mono"><b>${z2(abstand)}</b></td></tr>
+      </table></div>
+      ${entscheidend && maxDiff > 0 ? `<p class="small" style="margin:.5rem 0 0">
+        Den größten Beitrag liefert <b>${esc(entscheidend.k)}</b> mit +${z2(maxDiff)} Punkten. Die negativen Zeilen zeigen,
+        wo ${esc(String(zweiter.a))} besser ist – dort wird ein Teil des Vorsprungs wieder aufgezehrt. Ändert sich die Gewichtung
+        dieser Kriterien, kippt das Ergebnis am ehesten.</p>` : ''}` : ''}
+    <p class="small muted" style="margin:.6rem 0 0">
+      Für die Projektdokumentation gehören zusätzlich dazu: die Begründung der gewählten Kriterien, die Herleitung der Gewichte und eine getrennte Kostenbetrachtung – Preise fließen üblicherweise nicht in die Nutzwertanalyse ein, sondern werden dem Nutzwert gegenübergestellt.</p>
+  </div>`;
 }
 
 /* Diagramm zur Nutzwertanalyse */
