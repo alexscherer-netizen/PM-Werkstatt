@@ -3987,6 +3987,92 @@ const PAA_FELDER = [
   vorlage:''}
 ];
 
+/* ---- Musteranträge für den Antrags-Assistenten ---- */
+const PAA_BEISPIEL = [
+{
+ titel:'Automatisierte Clientbereitstellung',
+ kurz:'Ablösung der manuellen Installation von Notebooks durch eine automatisierte Bereitstellung – klassisches Systemintegrationsprojekt mit Alternativenvergleich und Sicherheitsanteil.',
+ f:{
+  f1:'Konzeption und Einführung einer automatisierten Clientbereitstellung für 25 Notebooks am Standort Berlin',
+  f2:'Ausgangssituation: Die 25 Notebooks der Außendienstabteilung werden derzeit einzeln von Hand installiert. Pro Gerät fallen rund 2,5 Stunden an, die Konfiguration weicht zwischen den Geräten ab und ist nicht dokumentiert.\n\nSachziel: Am Projektende steht eine automatisierte Bereitstellung zur Verfügung, mit der ein Notebook ohne manuelle Nacharbeit einsatzbereit ist. Die Lösung ist dokumentiert und an den IT-Betrieb übergeben.\nKostenziel: Die einmaligen Projektkosten überschreiten 6.500 € nicht, die laufenden Lizenzkosten liegen unter 1.200 € pro Jahr.\nZeitziel: Die Umsetzung erfolgt innerhalb der 40 Stunden Bearbeitungszeit und ist bis zum 30.06. abgeschlossen.\nQualitätsziel: Die Bereitstellung eines Geräts dauert höchstens 20 Minuten aktive Arbeitszeit, alle vier Fachanwendungen starten fehlerfrei, und eine Testgruppe von drei Anwendern bestätigt die Einsatzfähigkeit schriftlich.',
+  f3:'Auftraggeber ist Herr Meier, Leiter IT-Infrastruktur. Er hat die Anforderungen der Außendienstabteilung aufgenommen und verantwortet das Budget. Der unterschriebene Projektauftrag ist als Anhang beigefügt.',
+  f4:'Alternative 1: Beibehaltung der manuellen Installation mit standardisierter Checkliste.\nAlternative 2: Bereitstellung über ein zentrales Referenzabbild mit Verteilung im lokalen Netz.\nAlternative 3: Cloudbasierte Bereitstellung über Autopilot und Intune ohne lokalen Verteilserver.\n\nDer Vergleich erfolgt unter technischen Aspekten (Standortunabhängigkeit, Pflegeaufwand des Abbilds, Integration in den Verzeichnisdienst), unter wirtschaftlichen Aspekten (einmalige und laufende Kosten, Amortisation über die eingesparte Arbeitszeit, TCO über fünf Jahre) sowie unter qualitativen Aspekten (Fehleranfälligkeit, Nachvollziehbarkeit, Anwenderakzeptanz). Die Bewertung erfolgt mit einer gewichteten Nutzwertanalyse, ergänzt um eine Amortisationsrechnung.',
+  f5:'Aufgebaut wird eine Bereitstellungsumgebung mit Geräteprofilen, Konfigurationsrichtlinien und automatisierter Anwendungsverteilung für die vier Fachanwendungen. Erweitert wird die bestehende Geräteverwaltung, angebunden an den vorhandenen Verzeichnisdienst über die bestehende Schnittstelle zur Benutzersynchronisierung. Ergänzt wird eine Gruppenstruktur zur Zuordnung der Geräteprofile. Übergeben wird die Umgebung nach der Abnahme an den IT-Betrieb, einschließlich Betriebsdokumentation und Zuständigkeitsregelung.',
+  f6:'Einführung: Nach dem Aufbau der Umgebung erfolgt ein Pilotbetrieb mit drei Geräten aus dem Außendienst über eine Woche. Nach dokumentierter Auswertung und Freigabe folgt der Rollout der übrigen 22 Geräte in zwei Gruppen mit angekündigtem Zeitfenster. Die Anwender erhalten eine Einweisung von 30 Minuten je Gruppe sowie eine einseitige Kurzanleitung.\n\nPflege: Der laufende Betrieb umfasst ein monatliches Update der Konfigurationsprofile, die Überwachung des Registrierungsstatus über das Monitoring der Geräteverwaltung, eine quartalsweise Prüfung der Richtlinien sowie einen Wartungszyklus für die verteilten Anwendungen. Die Zuständigkeit nach der Übergabe liegt beim IT-Betrieb, die Dokumentation wird im Betriebshandbuch fortgeschrieben.',
+  f7:'Analysiert werden die bereitgestellten Notebooks hinsichtlich der Schutzziele Vertraulichkeit, Integrität und Verfügbarkeit. Als Verfahren der Schwachstellenanalyse dient ein Abgleich der Ist-Konfiguration mit den Anforderungen des einschlägigen BSI-Grundschutz-Bausteins für Clients sowie eine Auswertung der bisherigen Störungsmeldungen.\n\nFestgestellte Schwachstellen der bisherigen Installation: uneinheitliche lokale Administratorrechte, keine durchgängige Datenträgerverschlüsselung, fehlende Protokollierung von Anmeldungen und kein definiertes Verfahren bei Geräteverlust.\n\nUmgesetzte technische und organisatorische Maßnahmen: Berechtigungskonzept nach dem Grundsatz Least Privilege mit Entzug lokaler Administratorrechte, verpflichtende Datenträgerverschlüsselung mit zentraler Sicherung der Wiederherstellungsschlüssel, Zwei-Faktor-Authentifizierung für den Zugriff auf Unternehmensdaten, Protokollierung der Anmeldevorgänge mit begrenzter Aufbewahrungsdauer sowie eine Fernlöschung bei Geräteverlust mit einer Reaktionszeit unter 15 Minuten. Die Datensicherung der Nutzerdaten erfolgt nach der 3-2-1-Regel.'
+ },
+ zeit:[
+  {p:'Initialisierung – Ist-Analyse der manuellen Installation, Anforderungsaufnahme, Projektauftrag', h:5},
+  {p:'Planung – Sollkonzept, Nutzwertanalyse der drei Alternativen, Wirtschaftlichkeit, Termin- und Ressourcenplanung, Planung von QS und IT-Sicherheit', h:8},
+  {p:'Durchführung – Aufbau der Bereitstellungsumgebung, Profile und Richtlinien, Umsetzung der Schutzmaßnahmen, Pilot und Rollout', h:17},
+  {p:'Qualitätssicherung und Abschluss – Testfälle, Abnahme, Anwendereinweisung, Übergabe an den Betrieb', h:5},
+  {p:'Dokumentation (höchstens 6 h)', h:5}
+ ]
+},
+{
+ titel:'Backup- und Wiederherstellungskonzept',
+ kurz:'Ablösung einer unzureichenden Sicherung durch ein tragfähiges Konzept mit Offline-Kopie – stark auf IT-Sicherheit ausgerichtet.',
+ f:{
+  f1:'Konzeption und Einführung eines zentralen Backup- und Wiederherstellungskonzepts mit unveränderbarer Offline-Kopie',
+  f2:'Ausgangssituation: Die Datensicherung erfolgt derzeit auf eine externe Festplatte, die dauerhaft am Server angeschlossen im selben Raum verbleibt. Eine Wiederherstellung wurde nie getestet, Aufbewahrungsfristen sind nicht festgelegt.\n\nSachziel: Am Projektende ist ein dokumentiertes Sicherungskonzept für die drei zentralen Systeme umgesetzt, mit getesteter Wiederherstellung und einer räumlich getrennten, unveränderbaren Kopie.\nKostenziel: Die Gesamtkosten über fünf Jahre überschreiten 9.000 € nicht.\nZeitziel: Die Umsetzung erfolgt innerhalb der 40 Stunden Bearbeitungszeit und ist bis zum 15.09. abgeschlossen.\nQualitätsziel: Für das Warenwirtschaftssystem werden ein RTO von 4 Stunden und ein RPO von 1 Stunde nachweislich eingehalten; eine vollständige Testwiederherstellung wird protokolliert.',
+  f3:'Auftraggeber ist Frau Schulz, Leiterin der Verwaltung und verantwortlich für die Verfügbarkeit der kaufmännischen Systeme. Der unterschriebene Projektauftrag ist als Anlage hochgeladen.',
+  f4:'Alternative 1: Erweiterung der bestehenden Festplattensicherung um einen zweiten Datenträger mit wöchentlichem Wechsel und Auslagerung.\nAlternative 2: Sicherung auf einen dedizierten Sicherungsserver mit anschließender Auslagerung auf Bandmedien.\nAlternative 3: Sicherung auf einen lokalen Sicherungsspeicher mit zusätzlicher Auslagerung in einen Cloud-Speicher mit Unveränderbarkeitsfunktion.\n\nDer Vergleich erfolgt unter technischen Aspekten (erreichbare RTO und RPO, Rückübertragungsdauer, Automatisierbarkeit), unter wirtschaftlichen Aspekten (Anschaffung, laufende Kosten, Bedienaufwand, TCO über fünf Jahre) sowie unter qualitativen Aspekten (Schutz gegen Verschlüsselungsangriffe, Bedienbarkeit, Prüfbarkeit). Bewertet wird mit einer gewichteten Nutzwertanalyse und einem Kostenvergleich über fünf Jahre.',
+  f5:'Aufgebaut wird ein zentraler Sicherungsdienst für den Warenwirtschaftsserver, den Dateiserver und die virtuellen Maschinen des Hypervisors. Erweitert wird die bestehende Speicherumgebung um einen getrennten Sicherungsspeicher mit eigenen Anmeldedaten. Die Schnittstellen zum vorhandenen Monitoring und zur Ticketverwaltung werden für die Alarmierung bei fehlgeschlagenen Sicherungsläufen angebunden. Übergeben wird die Lösung nach der Abnahme an den IT-Betrieb, einschließlich Betriebs- und Notfalldokumentation.',
+  f6:'Einführung: Nach dem Aufbau erfolgt ein Pilotbetrieb mit dem Dateiserver über eine Woche, danach die schrittweise Aufnahme der übrigen Systeme in den Sicherungsplan. Die Umstellung findet in einem abgestimmten Wartungsfenster außerhalb der Kernarbeitszeit statt. Die Anwender werden über geänderte Wiederherstellungswege informiert, die Mitarbeitenden des IT-Betriebs erhalten eine Einweisung von 60 Minuten mit praktischer Übung einer Wiederherstellung.\n\nPflege: Tägliche automatische Prüfung der Sicherungsprotokolle mit Alarmierung über das Monitoring, monatliche Stichprobenwiederherstellung, halbjährlicher vollständiger Wiederherstellungstest mit Protokoll, jährliche Überprüfung der Aufbewahrungsfristen sowie ein Updatezyklus für die Sicherungssoftware.',
+  f7:'Analysiert werden die drei zentralen Systeme hinsichtlich der Schutzziele Vertraulichkeit, Integrität und Verfügbarkeit. Der Schutzbedarf wird je System und Schutzziel bestimmt, für die Verfügbarkeit ergibt sich beim Warenwirtschaftssystem ein hoher Schutzbedarf nach dem Maximumprinzip. Als Verfahren der Schwachstellenanalyse dienen eine Business Impact Analyse und der Abgleich mit dem BSI-Grundschutz-Baustein zur Datensicherung.\n\nFestgestellte Schwachstellen: die Sicherungskopie ist dauerhaft online erreichbar und damit durch Verschlüsselungsangriffe gefährdet, sie liegt im selben Brandabschnitt, das Sicherungssystem nutzt Domänenadministratorrechte, und es existiert kein Nachweis der Wiederherstellbarkeit.\n\nUmgesetzte technische und organisatorische Maßnahmen: Umsetzung der 3-2-1-Regel mit einer räumlich getrennten und unveränderbaren Kopie, getrennte Anmeldedaten für das Sicherungssystem ohne Domänenadministratorrechte, Verschlüsselung der Sicherungsdaten bei Übertragung und Speicherung, Protokollierung und Alarmierung fehlgeschlagener Läufe, dokumentierter Wiederanlaufplan mit Reihenfolge nach Abhängigkeiten sowie ein Löschkonzept mit definierten Aufbewahrungsfristen je Datenart.'
+ },
+ zeit:[
+  {p:'Initialisierung – Ist-Analyse der Sicherung, Business Impact Analyse, Anforderungsaufnahme, Projektauftrag', h:6},
+  {p:'Planung – Schutzbedarf, RTO und RPO je System, Nutzwertanalyse der Alternativen, Kostenvergleich, Sicherungsplan', h:9},
+  {p:'Durchführung – Aufbau des Sicherungsdienstes, Umsetzung der Schutzmaßnahmen, Anbindung an Monitoring, Pilot und Aufnahme der Systeme', h:15},
+  {p:'Qualitätssicherung und Abschluss – Testwiederherstellung, Abnahme, Einweisung, Übergabe und Wiederanlaufplan', h:6},
+  {p:'Dokumentation (höchstens 6 h)', h:4}
+ ]
+}
+];
+
+let paaBspIdx = 0, paaBspOffen = false;
+function paaBeispielUebernehmen(i){
+  const b = PAA_BEISPIEL[i];
+  const belegt = Object.values(S.paa || {}).some(v => String(v).trim().length > 0);
+  if(belegt && !confirm('Deine bisherigen Antragstexte werden durch das Beispiel ersetzt. Fortfahren?')) return;
+  S.paa = {...b.f}; paaSave();
+  PAZ = JSON.parse(JSON.stringify(b.zeit)); pazSave();
+  paaBspOffen = false;
+  paAssistent();
+  window.scrollTo({top:0,behavior:'instant'});
+}
+function paaBeispielKarte(){
+  const b = PAA_BEISPIEL[paaBspIdx];
+  const summe = b.zeit.reduce((a,z)=>a+z.h,0);
+  return `
+  <div class="card">
+    <h3>Musterantrag ansehen</h3>
+    <p class="small muted">Zwei vollständig ausformulierte Anträge, die alle Prüfpunkte erfüllen. Nutze sie als Orientierung für Aufbau und Detailtiefe – die Inhalte musst du selbstverständlich auf dein eigenes Projekt umschreiben.</p>
+    <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin:.8rem 0">
+      ${PAA_BEISPIEL.map((x,i)=>`<button class="btn sm ${i===paaBspIdx?'primary':''}" onclick="paaBspIdx=${i};paAssistent()">${x.titel}</button>`).join('')}
+    </div>
+    <p class="small">${b.kurz}</p>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin:.8rem 0">
+      <button class="btn" onclick="paaBspOffen=${!paaBspOffen};paAssistent()">${paaBspOffen?'Beispiel ausblenden':'Beispiel anzeigen'}</button>
+      <button class="btn primary" onclick="paaBeispielUebernehmen(${paaBspIdx})">In die Felder übernehmen</button>
+    </div>
+    ${paaBspOffen ? `
+      ${PAA_FELDER.filter(f=>f.id!=='f8').map(f=>`
+        <div style="border-left:2px solid var(--violet);padding:.5rem 0 .5rem .8rem;margin-bottom:.7rem">
+          <b class="small">${f.t}</b>
+          <div class="small" style="white-space:pre-line;color:var(--ink-dim);margin-top:.25rem">${esc(b.f[f.id])}</div>
+        </div>`).join('')}
+      <div style="border-left:2px solid var(--violet);padding:.5rem 0 .5rem .8rem">
+        <b class="small">8. Zeitplan</b>
+        <div class="small mono" style="white-space:pre-line;color:var(--ink-dim);margin-top:.25rem">${esc(b.zeit.map(z=>'- '+z.p+': '+z.h+' h').join('\n')+'\nGesamt: '+summe+' h')}</div>
+      </div>
+      <div class="note" style="margin-top:.9rem"><b>Warum dieser Antrag durchgeht</b>
+      Alle sechs Verordnungsanforderungen sind abgedeckt: Anforderungen analysiert (Feld 2), Lösungsalternativen technisch, wirtschaftlich und qualitativ verglichen (Feld 4), System aufgebaut und übergeben (Feld 5), eingeführt und gepflegt (Feld 6), Schwachstellen analysiert und Schutzmaßnahmen umgesetzt (Feld 7), Zeitplan mit genau 40 Stunden und höchstens 6 Stunden Dokumentation (Feld 8).</div>
+    ` : ''}
+  </div>`;
+}
+
 function paaPruefe(){
   const v = id => (S.paa[id] || '').trim();
   const hat = (id, re) => re.test(v(id));
@@ -4059,6 +4145,8 @@ function paAssistent(){
     <div class="bar" style="margin-top:.35rem"><i style="width:${quote}%;background:${quote>=90?'var(--teal)':quote>=60?'var(--amber)':'var(--red)'}"></i></div>
     <p class="small muted" style="margin:.6rem 0 0">Die Prüfung ist eine Formhilfe, keine Garantie für die Genehmigung. Inhaltliche Angemessenheit beurteilt allein der Prüfungsausschuss.</p>
   </div>
+
+  ${paaBeispielKarte()}
 
   ${PAA_FELDER.map((f,i)=>{
     const p = pruef[i], val = S.paa[f.id] || '';
