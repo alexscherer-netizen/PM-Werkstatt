@@ -3549,7 +3549,7 @@ let PAZ = JSON.parse(localStorage.getItem('pmw_paz') || 'null') || [
 const pazSave = () => localStorage.setItem('pmw_paz', JSON.stringify(PAZ));
 
 let paTab = 'ueberblick';
-const PATABS = [['ueberblick','Überblick'],['antrag','Projektantrag'],['assistent','Antrags-Assistent'],['zeit','Zeitplan'],['doku','Dokumentation'],['praes','Präsentation & Fachgespräch'],['note','Notenrechner']];
+const PATABS = [['ueberblick','Überblick'],['antrag','Projektantrag'],['assistent','Antrags-Assistent'],['zeit','Zeitplan'],['heft','Lasten-/Pflichtenheft'],['doku','Doku-Regeln'],['dokutool','Doku-Editor'],['praes','Präsentation & Fachgespräch'],['note','Notenrechner']];
 
 function renderProjekt(){
   $('#v-projekt').innerHTML = `
@@ -3561,7 +3561,7 @@ function renderProjekt(){
       ${PATABS.map(([k,l])=>`<button class="btn sm ${k===paTab?'primary':''}" onclick="paTab='${k}';renderProjekt()">${l}</button>`).join('')}
     </div>
     <div id="paBody"></div>`;
-  ({ueberblick:paUeberblick, antrag:paAntrag, assistent:paAssistent, zeit:paZeit, doku:paDoku, praes:paPraes, note:paNote})[paTab]();
+  ({ueberblick:paUeberblick, antrag:paAntrag, assistent:paAssistent, zeit:paZeit, heft:paHeft, doku:paDoku, dokutool:paDokuTool, praes:paPraes, note:paNote})[paTab]();
 }
 
 function paCheckliste(key, titel, punkte){
@@ -3759,15 +3759,14 @@ function paZeit(){
   </div>
 
   <div class="card">
-    <h3>Balkenverteilung</h3>
-    ${PAZ.map((p,i)=>`
-      <div style="margin-bottom:.55rem">
-        <div style="display:flex;justify-content:space-between;font-size:.82rem;gap:.6rem">
-          <span>${esc(String(p.p).slice(0,44))}</span><span class="mono muted">${p.h} h</span>
-        </div>
-        <div class="bar" style="margin-top:.2rem"><i style="width:${summe?p.h/Math.max(summe,40)*100:0}%;background:${/dokumentation/i.test(p.p)?(dokuOk?'var(--violet)':'var(--red)'):'var(--teal)'}"></i></div>
-      </div>`).join('')}
-    <p class="small muted" style="margin:.5rem 0 0">Violett markiert die Dokumentation. Wird sie rot, ist die 6-Stunden-Grenze überschritten.</p>
+    <h3>Gantt-Diagramm der Projektphasen</h3>
+    <p class="small muted">Die Phasen laufen nacheinander über die 40 Stunden Bearbeitungszeit. Die Rauten markieren die Meilensteine am jeweiligen Phasenende.</p>
+    ${pazGantt()}
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.9rem">
+      <button class="btn primary" onclick="pazWord()">📄 Zeitplan als Word-Datei</button>
+      <button class="btn sm ghost" onclick="paTab='assistent';renderProjekt()">Im Antrag verwenden</button>
+    </div>
+    <p class="small muted" style="margin:.6rem 0 0">Die Word-Datei enthält die Phasentabelle und den Balkenplan als Tabelle – direkt verwendbar im Projektantrag und in der Dokumentation.</p>
   </div>
 
   <div class="card">
@@ -3818,6 +3817,15 @@ function paDoku(){
       <li>Projektbegleitend stichwortartige Notizen führen und die Doku daraus erstellen – so bleiben die 6 Stunden realistisch.</li>
       <li>Der Ausschuss bereitet mit der Dokumentation auch das <b>Fachgespräch</b> vor. Was du schreibst, wird gefragt.</li>
     </ul>
+  </div>
+
+  <div class="card">
+    <h3>Word-Vorlage erzeugen</h3>
+    <p class="small muted">Erstellt eine .docx-Datei mit der vollständigen Gliederung nach dem Bewertungsraster, bereits mit Schriftgrad 11 und 1,3-fachem Zeilenabstand sowie deinem Seitenbudget als Planungshilfe.</p>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem">
+      <button class="btn primary" onclick="paDokuWord()">📄 Leere Vorlage herunterladen</button>
+      <button class="btn" onclick="paTab='dokutool';renderProjekt()">Zum Doku-Editor</button>
+    </div>
   </div>
 
   ${paSeiten()}
@@ -4177,9 +4185,10 @@ function paAssistent(){
 
   <div class="card">
     <h3>Antrag als Text ausgeben</h3>
-    <p class="small muted">Erzeugt den vollständigen Antragstext zum Kopieren in die Formularfelder des IHK-Portals.</p>
+    <p class="small muted">Der Word-Export erzeugt eine echte .docx-Datei mit Überschriftenstruktur, Schriftgrad 11 und 1,3-fachem Zeilenabstand. Die Textausgabe daneben eignet sich zum Kopieren in die einzelnen Formularfelder des IHK-Portals.</p>
     <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin:.7rem 0">
-      <button class="btn primary" onclick="paaExport()">Text erzeugen</button>
+      <button class="btn primary" onclick="paaWord()">📄 Als Word-Datei herunterladen</button>
+      <button class="btn" onclick="paaExport()">Text erzeugen</button>
       <button class="btn ghost sm" onclick="if(confirm('Alle Antragstexte löschen?')){S.paa={};paaSave();paAssistent()}">Alles löschen</button>
     </div>
     <div id="paaOut"></div>
@@ -4226,7 +4235,7 @@ function paSeiten(){
     <div class="bar" style="margin:.7rem 0"><i style="width:${Math.min(summe/15*100,100)}%;background:${ok?'var(--teal)':'var(--red)'}"></i></div>
     <div style="display:flex;gap:.5rem;flex-wrap:wrap">
       <button class="btn sm" onclick="PAS.push({k:'Neuer Abschnitt',s:1});pasSave();paDoku()">+ Abschnitt</button>
-      <button class="btn sm ghost" onclick="if(confirm('Seitenbudget auf die Vorlage zurücksetzen?')){localStorage.removeItem('pmw_pas');location.reload()}">Vorlage laden</button>
+      <button class="btn sm ghost" onclick="if(confirm('Seitenbudget auf die Vorlage zurücksetzen?')){localStorage.removeItem('pmw_pas');localStorage.removeItem('pmw_lph');localStorage.removeItem('pmw_dok');location.reload()}">Vorlage laden</button>
     </div>
     <p class="small" style="margin:.7rem 0 0;color:${ok?'var(--ok)':'var(--red)'}">
       ${ok?`✓ ${String(15-summe).replace('.',',')} Seiten Reserve.`:`✗ Das Budget ist um ${String(summe-15).replace('.',',')} Seiten überschritten.`}
@@ -4295,6 +4304,483 @@ function paTimer(){
       <button class="btn ghost" onclick="ptReset()">Zurücksetzen</button>
     </div>
   </div>`;
+}
+
+/* ===================== WORD-EXPORT (echtes .docx) ===================== */
+/* Minimaler OOXML-Writer: erzeugt ein gültiges .docx als ZIP ohne externe Bibliothek. */
+const CRC_TAB = (()=>{ const t=new Uint32Array(256);
+  for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c = c&1 ? 0xEDB88320 ^ (c>>>1) : c>>>1; t[n]=c>>>0; }
+  return t; })();
+function crc32(b){ let c=0xFFFFFFFF; for(let i=0;i<b.length;i++) c = CRC_TAB[(c ^ b[i]) & 0xFF] ^ (c>>>8); return (c ^ 0xFFFFFFFF)>>>0; }
+
+function zipStore(dateien){
+  const enc = new TextEncoder();
+  const teile = [], zentral = [];
+  let offset = 0;
+  const u16 = n => [n & 255, (n>>>8) & 255];
+  const u32 = n => [n & 255, (n>>>8) & 255, (n>>>16) & 255, (n>>>24) & 255];
+  dateien.forEach(f=>{
+    const name = enc.encode(f.name), daten = enc.encode(f.inhalt), c = crc32(daten);
+    const lokal = new Uint8Array([...u32(0x04034b50), ...u16(20), ...u16(0), ...u16(0), ...u16(0), ...u16(0),
+      ...u32(c), ...u32(daten.length), ...u32(daten.length), ...u16(name.length), ...u16(0)]);
+    teile.push(lokal, name, daten);
+    zentral.push(new Uint8Array([...u32(0x02014b50), ...u16(20), ...u16(20), ...u16(0), ...u16(0), ...u16(0), ...u16(0),
+      ...u32(c), ...u32(daten.length), ...u32(daten.length), ...u16(name.length),
+      ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(offset)]), name);
+    offset += lokal.length + name.length + daten.length;
+  });
+  const zLen = zentral.reduce((a,b)=>a+b.length,0);
+  const ende = new Uint8Array([...u32(0x06054b50), ...u16(0), ...u16(0),
+    ...u16(dateien.length), ...u16(dateien.length), ...u32(zLen), ...u32(offset), ...u16(0)]);
+  const alle = [...teile, ...zentral, ende];
+  const gesamt = new Uint8Array(alle.reduce((a,b)=>a+b.length,0));
+  let pos = 0; alle.forEach(t=>{ gesamt.set(t, pos); pos += t.length; });
+  return new Blob([gesamt], {type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+}
+
+const xEsc = t => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+/* Absatztypen: t = Titel, h1 / h2 = Überschriften, p = Fließtext, li = Aufzählung, mono = feste Breite */
+function docxZelle(zelle, breite, kopf){
+  const o = (zelle && typeof zelle === 'object') ? zelle : {t: zelle};
+  const fill = o.fill || (kopf ? 'E7EEF5' : null);
+  const sz = o.sz || 19;
+  const jc = o.center ? '<w:jc w:val="center"/>' : '';
+  return `<w:tc><w:tcPr><w:tcW w:w="${breite}" w:type="dxa"/>${fill?`<w:shd w:val="clear" w:color="auto" w:fill="${fill}"/>`:''}<w:vAlign w:val="center"/></w:tcPr>` +
+    `<w:p><w:pPr><w:spacing w:after="20" w:line="240" w:lineRule="auto"/>${jc}</w:pPr>` +
+    `<w:r><w:rPr>${kopf?'<w:b/>':''}<w:sz w:val="${sz}"/></w:rPr><w:t xml:space="preserve">${xEsc(o.t||'')}</w:t></w:r></w:p></w:tc>`;
+}
+function docxTabelle(tb){
+  const br = tb.breiten || tb.kopf.map(()=>Math.round(9000/tb.kopf.length));
+  const rand = '<w:tblBorders>' + ['top','left','bottom','right','insideH','insideV']
+    .map(k=>`<w:${k} w:val="single" w:sz="4" w:space="0" w:color="9AA7B4"/>`).join('') + '</w:tblBorders>';
+  const zeile = (zellen, kopf) => '<w:tr>' + zellen.map((z,i)=>docxZelle(z, br[i], kopf)).join('') + '</w:tr>';
+  return '<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/>' + rand + '</w:tblPr>' +
+    '<w:tblGrid>' + br.map(b=>`<w:gridCol w:w="${b}"/>`).join('') + '</w:tblGrid>' +
+    zeile(tb.kopf, true) + tb.zeilen.map(z=>zeile(z, false)).join('') +
+    '</w:tbl><w:p><w:pPr><w:spacing w:after="0"/></w:pPr></w:p>';
+}
+function docxAbsatz(a){
+  if(a.typ === 'tbl') return docxTabelle(a.tabelle);
+  const stil = {t:'Title', h1:'Heading1', h2:'Heading2'}[a.typ];
+  const pPr = `<w:pPr>${stil?`<w:pStyle w:val="${stil}"/>`:''}${a.typ==='li'?'<w:ind w:left="360" w:hanging="180"/>':''}${a.typ==='mono'?'<w:spacing w:line="240" w:lineRule="auto"/>':''}</w:pPr>`;
+  const rPr = a.typ==='mono' ? '<w:rPr><w:rFonts w:ascii="Consolas" w:hAnsi="Consolas"/><w:sz w:val="18"/></w:rPr>' : '';
+  const text = (a.typ==='li' ? '– ' : '') + (a.text || '');
+  return `<w:p>${pPr}<w:r>${rPr}<w:t xml:space="preserve">${xEsc(text)}</w:t></w:r></w:p>`;
+}
+
+function docxErzeugen(absaetze, dateiname){
+  const body = absaetze.map(docxAbsatz).join('') +
+    '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1418" w:header="709" w:footer="709"/></w:sectPr>';
+  const kopf = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+  const nsW = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
+  const dateien = [
+    {name:'[Content_Types].xml', inhalt: kopf +
+      '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+      '<Default Extension="xml" ContentType="application/xml"/>' +
+      '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
+      '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>' +
+      '</Types>'},
+    {name:'_rels/.rels', inhalt: kopf +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>' +
+      '</Relationships>'},
+    {name:'word/_rels/document.xml.rels', inhalt: kopf +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+      '</Relationships>'},
+    /* Schriftgrad 11 (sz 22 Halbpunkte) und 1,3-facher Zeilenabstand (line 312) wie vom Leitfaden gefordert */
+    {name:'word/styles.xml', inhalt: kopf + `<w:styles ${nsW}>` +
+      '<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="22"/></w:rPr></w:rPrDefault>' +
+      '<w:pPrDefault><w:pPr><w:spacing w:after="140" w:line="312" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>' +
+      '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>' +
+      '<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:basedOn w:val="Normal"/>' +
+      '<w:pPr><w:spacing w:before="0" w:after="360"/></w:pPr><w:rPr><w:b/><w:sz w:val="40"/></w:rPr></w:style>' +
+      '<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/>' +
+      '<w:pPr><w:outlineLvl w:val="0"/><w:spacing w:before="360" w:after="160"/></w:pPr><w:rPr><w:b/><w:sz w:val="30"/></w:rPr></w:style>' +
+      '<w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:basedOn w:val="Normal"/>' +
+      '<w:pPr><w:outlineLvl w:val="1"/><w:spacing w:before="280" w:after="120"/></w:pPr><w:rPr><w:b/><w:sz w:val="26"/></w:rPr></w:style>' +
+      '</w:styles>'},
+    {name:'word/document.xml', inhalt: kopf + `<w:document ${nsW}><w:body>${body}</w:body></w:document>`}
+  ];
+  const blob = zipStore(dateien);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = dateiname;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 4000);
+}
+
+/* ---- Word-Export des Projektantrags ---- */
+function paaWord(){
+  const heute = new Date().toLocaleDateString('de-DE');
+  const abs = [{typ:'t', text:'Projektantrag'},
+    {typ:'p', text:'Betriebliche Projektarbeit im Prüfungsbereich „Planen und Umsetzen eines Projektes der Systemintegration" · Stand ' + heute}];
+  PAA_FELDER.forEach(f=>{
+    abs.push({typ:'h2', text:f.t});
+    if(f.id === 'f8'){
+      PAZ.forEach(z => abs.push({typ:'li', text:`${z.p}: ${String(z.h).replace('.',',')} h`}));
+      abs.push({typ:'p', text:`Gesamt: ${String(PAZ.reduce((a,z)=>a+(+z.h||0),0)).replace('.',',')} Stunden, davon Dokumentation höchstens 6 Stunden.`});
+      abs.push({typ:'p', text:'Balkenplan der Phasen:'});
+      abs.push({typ:'tbl', tabelle:pazGanttTabelle()});
+    } else {
+      const txt = (S.paa[f.id] || '(noch nicht ausgefüllt)').split(/\n+/).filter(z=>z.trim());
+      txt.forEach(z => abs.push({typ: /^[-•–]\s|^alternative\s*\d|^\d\./i.test(z.trim()) ? 'li' : 'p', text: z.trim().replace(/^[-•–]\s*/,'')}));
+    }
+  });
+  docxErzeugen(abs, 'Projektantrag.docx');
+}
+
+/* ---- Word-Vorlage für die Projektdokumentation ---- */
+function paDokuWord(){
+  const abs = [
+    {typ:'t', text:'Projektdokumentation'},
+    {typ:'p', text:'Betriebliche Projektarbeit · Fachinformatiker Systemintegration'},
+    {typ:'p', text:'Name: ______________________   Ausbildungsbetrieb: ______________________'},
+    {typ:'p', text:'Projektbezeichnung: ' + (S.paa && S.paa.f1 ? S.paa.f1 : '______________________')},
+    {typ:'p', text:'Abgabedatum: ______________'},
+    {typ:'h1', text:'Hinweise zu dieser Vorlage'},
+    {typ:'p', text:'Die Gliederung folgt dem Bewertungsraster des Leitfadens der IHK Berlin. Schriftgrad 11 und 1,3-facher Zeilenabstand sind bereits eingestellt. Der Bericht darf höchstens 15 Inhaltsseiten umfassen, ohne Deckblatt und Verzeichnisse. Die praxisbezogenen Unterlagen im Anhang dürfen 17 Seiten nicht überschreiten. Bericht und Anlagen werden in einer PDF-Datei mit höchstens 5 MB abgegeben. Das unterschriebene Protokoll über die durchgeführte Projektarbeit ist beizulegen. Diese Hinweisseite vor der Abgabe löschen.'}
+  ];
+  const budget = {}; PAS.forEach(p => budget[p.k] = p.s);
+  PA_DOKU.filter(g => g[0] !== 'Gestaltung der Dokumentation').forEach(([g, items])=>{
+    abs.push({typ:'h1', text:g});
+    items.forEach(i => abs.push({typ:'h2', text:i}, {typ:'p', text:'…'}));
+  });
+  abs.push({typ:'h1', text:'Seitenbudget (Planung, vor der Abgabe löschen)'});
+  PAS.forEach(p => abs.push({typ:'li', text:`${p.k}: ${String(p.s).replace('.',',')} Seiten`}));
+  abs.push({typ:'p', text:`Summe: ${String(PAS.reduce((a,p)=>a+(+p.s||0),0)).replace('.',',')} von 15 Seiten.`});
+  docxErzeugen(abs, 'Projektdokumentation-Vorlage.docx');
+}
+
+/* ===================== LASTEN- UND PFLICHTENHEFT ===================== */
+const LPH_VAGE = ['schnell','benutzerfreundlich','einfach','ausreichend','zeitnah','optimal','modern','performant','möglichst','flexibel','übersichtlich','stabil','sicher genug','komfortabel','zuverlässig','nach Bedarf','umfangreich','effizient','intuitiv','angemessen'];
+const LPH_ABSCHNITTE = [
+ {id:'a1', t:'Ausgangssituation', h:'Warum gibt es das Vorhaben? Welches Problem besteht heute, mit welchen Folgen?'},
+ {id:'a2', t:'Ist-Analyse', h:'Bestehende Systeme, Mengengerüste, Schnittstellen, Nutzerzahlen, Dokumentationsstand.'},
+ {id:'a3', t:'Zielsetzung und Abgrenzung', h:'Was soll erreicht werden, und was ausdrücklich nicht (Nicht-Ziele)?'},
+ {id:'a4', t:'Rahmenbedingungen', h:'Budget, Termine, Normen, Datenschutz, betriebliche Vorgaben, vorhandene Technik.'},
+ {id:'a5', t:'Lieferumfang', h:'Welche Leistungen, Dokumente und Schulungen gehören dazu?'},
+ {id:'a6', t:'Abnahmekriterien', h:'Woran wird die Erfüllung gemessen? Welche Tests und Protokolle sind vorgesehen?'}
+];
+function lphStandard(){
+  return {typ:'lasten',
+    kopf:{projekt:'', ag:'', an:'', version:'1.0', datum:new Date().toLocaleDateString('de-DE'), autor:''},
+    ab:{}, anf:[
+      {t:'', b:'', typ:'funktional', prio:'Muss', pruef:'', um:''}
+    ]};
+}
+if(!S.lph) S.lph = JSON.parse(localStorage.getItem('pmw_lph') || 'null') || lphStandard();
+const lphSave = () => localStorage.setItem('pmw_lph', JSON.stringify(S.lph));
+const lphId = i => (S.lph.anf[i].typ === 'funktional' ? 'F-' : 'NF-') + String(i+1).padStart(2,'0');
+function lphVage(t){ return LPH_VAGE.filter(w => new RegExp('\\b'+w.replace(/ /g,'\\s'),'i').test(t||'')); }
+
+function paHeft(){
+  const L = S.lph, ist = L.typ === 'lasten';
+  const anf = L.anf;
+  const fkt = anf.filter(a=>a.typ==='funktional').length, nfk = anf.length - fkt;
+  const ohnePruef = anf.filter(a=>!String(a.pruef||'').trim() && String(a.t||'').trim()).length;
+  const vageTreffer = anf.flatMap((a,i)=>{ const w=[...new Set([...lphVage(a.t),...lphVage(a.b)])]; return w.length?[{i,w}]:[]; });
+  const ohneUm = ist ? 0 : anf.filter(a=>!String(a.um||'').trim() && String(a.t||'').trim()).length;
+  const leereAb = LPH_ABSCHNITTE.filter(s=>!String(L.ab[s.id]||'').trim()).length;
+
+  $('#paBody').innerHTML = `
+  <div class="card">
+    <h3>Lasten- und Pflichtenheft</h3>
+    <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin:.7rem 0">
+      <button class="btn sm ${ist?'primary':''}" onclick="S.lph.typ='lasten';lphSave();paHeft()">Lastenheft</button>
+      <button class="btn sm ${!ist?'primary':''}" onclick="S.lph.typ='pflichten';lphSave();paHeft()">Pflichtenheft</button>
+    </div>
+    <div class="note">${ist
+      ? '<b>Lastenheft</b>Erstellt der <b>Auftraggeber</b>. Es beschreibt <b>lösungsneutral</b>, was gefordert wird und wofür. Keine Produkt- oder Technikvorgaben, sonst schränkst du die Anbieter unnötig ein.'
+      : '<b>Pflichtenheft</b>Erstellt der <b>Auftragnehmer</b> als Antwort auf das Lastenheft. Es beschreibt <b>wie und womit</b> umgesetzt wird. Nach der Freigabe durch den Auftraggeber ist es Vertragsbestandteil – Abweichungen davon sind Mängel.'}</div>
+    <div class="grid g3" style="margin-top:.9rem">
+      <div class="field"><label class="fl">Projektbezeichnung</label><input value="${esc(L.kopf.projekt)}" oninput="S.lph.kopf.projekt=this.value;lphSave()"></div>
+      <div class="field"><label class="fl">Auftraggeber</label><input value="${esc(L.kopf.ag)}" oninput="S.lph.kopf.ag=this.value;lphSave()"></div>
+      <div class="field"><label class="fl">Auftragnehmer</label><input value="${esc(L.kopf.an)}" oninput="S.lph.kopf.an=this.value;lphSave()"></div>
+      <div class="field"><label class="fl">Verfasser</label><input value="${esc(L.kopf.autor)}" oninput="S.lph.kopf.autor=this.value;lphSave()"></div>
+      <div class="field"><label class="fl">Version</label><input value="${esc(L.kopf.version)}" oninput="S.lph.kopf.version=this.value;lphSave()"></div>
+      <div class="field"><label class="fl">Datum</label><input value="${esc(L.kopf.datum)}" oninput="S.lph.kopf.datum=this.value;lphSave()"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Textabschnitte</h3>
+    ${LPH_ABSCHNITTE.map(s=>`
+      <div style="margin-bottom:1rem">
+        <label class="fl"><b>${s.t}</b> – ${s.h}</label>
+        <textarea rows="3" placeholder="…" oninput="S.lph.ab['${s.id}']=this.value;lphSave()"
+          onblur="paHeft()" style="font-size:.9rem">${esc(L.ab[s.id]||'')}</textarea>
+      </div>`).join('')}
+  </div>
+
+  <div class="card">
+    <h3>Anforderungskatalog</h3>
+    <p class="small muted">Jede Anforderung erhält eine ID, eine Priorität und ein <b>messbares Prüfkriterium</b>. Ohne Prüfkriterium ist eine Anforderung nicht abnahmefähig.</p>
+    ${anf.map((a,i)=>{
+      const vage = [...new Set([...lphVage(a.t),...lphVage(a.b)])];
+      return `
+      <div style="border:1px solid ${vage.length?'var(--amber)':'var(--line)'};border-radius:8px;padding:.8rem;margin-top:.8rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:.6rem;margin-bottom:.5rem">
+          <b class="mono" style="color:var(--teal)">${lphId(i)}</b>
+          ${anf.length>1?`<button class="btn sm ghost" onclick="S.lph.anf.splice(${i},1);lphSave();paHeft()">✕</button>`:''}
+        </div>
+        <div class="field"><label class="fl">Kurztitel</label>
+          <input value="${esc(a.t)}" oninput="S.lph.anf[${i}].t=this.value;lphSave()" onblur="paHeft()"></div>
+        <div class="field"><label class="fl">Beschreibung (ein Satz, im Aktiv, mit muss/soll/kann)</label>
+          <textarea rows="2" oninput="S.lph.anf[${i}].b=this.value;lphSave()" onblur="paHeft()" style="font-size:.9rem">${esc(a.b)}</textarea></div>
+        <div class="grid g3">
+          <div class="field"><label class="fl">Art</label>
+            <select onchange="S.lph.anf[${i}].typ=this.value;lphSave();paHeft()">
+              <option ${a.typ==='funktional'?'selected':''}>funktional</option>
+              <option ${a.typ==='nichtfunktional'?'selected':''}>nichtfunktional</option></select></div>
+          <div class="field"><label class="fl">Priorität</label>
+            <select onchange="S.lph.anf[${i}].prio=this.value;lphSave()">
+              ${['Muss','Soll','Kann'].map(p=>`<option ${a.prio===p?'selected':''}>${p}</option>`).join('')}</select></div>
+          <div class="field"><label class="fl">Prüfkriterium (messbar)</label>
+            <input value="${esc(a.pruef)}" oninput="S.lph.anf[${i}].pruef=this.value;lphSave()" onblur="paHeft()"></div>
+        </div>
+        ${!ist?`<div class="field" style="margin-bottom:0"><label class="fl">Umsetzung (wie und womit)</label>
+          <textarea rows="2" oninput="S.lph.anf[${i}].um=this.value;lphSave()" onblur="paHeft()" style="font-size:.9rem">${esc(a.um||'')}</textarea></div>`:''}
+        ${vage.length?`<p class="small" style="margin:.5rem 0 0;color:var(--amber)">⚠ Unbestimmte Begriffe: <b>${vage.join(', ')}</b> – ersetze sie durch messbare Angaben, etwa „in unter 2 Sekunden" statt „schnell".</p>`:''}
+      </div>`}).join('')}
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem">
+      <button class="btn sm" onclick="S.lph.anf.push({t:'',b:'',typ:'funktional',prio:'Muss',pruef:'',um:''});lphSave();paHeft()">+ Anforderung</button>
+      <button class="btn sm" onclick="S.lph.anf.push({t:'',b:'',typ:'nichtfunktional',prio:'Soll',pruef:'',um:''});lphSave();paHeft()">+ nichtfunktionale Anforderung</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Qualitätsprüfung</h3>
+    <ul class="tight small" style="margin-bottom:.8rem">
+      <li style="color:${anf.length>=3?'var(--ok)':'var(--ink-dim)'}">${anf.length>=3?'✓':'○'} Mindestens drei Anforderungen erfasst (aktuell ${anf.length})</li>
+      <li style="color:${nfk>=1?'var(--ok)':'var(--red)'}">${nfk>=1?'✓':'✗'} Nichtfunktionale Anforderungen vorhanden (aktuell ${nfk} von ${anf.length}; funktional: ${fkt})</li>
+      <li style="color:${ohnePruef===0?'var(--ok)':'var(--red)'}">${ohnePruef===0?'✓':'✗'} Jede Anforderung hat ein Prüfkriterium${ohnePruef?` (${ohnePruef} ohne)`:''}</li>
+      <li style="color:${vageTreffer.length===0?'var(--ok)':'var(--amber)'}">${vageTreffer.length===0?'✓':'⚠'} Keine unbestimmten Begriffe${vageTreffer.length?` (betroffen: ${vageTreffer.map(v=>lphId(v.i)).join(', ')})`:''}</li>
+      <li style="color:${anf.some(a=>a.prio==='Muss')?'var(--ok)':'var(--amber)'}">${anf.some(a=>a.prio==='Muss')?'✓':'⚠'} Mindestens eine Muss-Anforderung priorisiert</li>
+      <li style="color:${leereAb===0?'var(--ok)':'var(--ink-dim)'}">${leereAb===0?'✓':'○'} Alle Textabschnitte ausgefüllt${leereAb?` (${leereAb} offen)`:''}</li>
+      ${!ist?`<li style="color:${ohneUm===0?'var(--ok)':'var(--red)'}">${ohneUm===0?'✓':'✗'} Jede Anforderung hat eine Umsetzungsbeschreibung${ohneUm?` (${ohneUm} ohne)`:''}</li>`:''}
+    </ul>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <button class="btn primary" onclick="lphWord()">📄 Als Word-Datei herunterladen</button>
+      <button class="btn ghost sm" onclick="if(confirm('${ist?'Lastenheft':'Pflichtenheft'} vollständig zurücksetzen?')){S.lph=lphStandard();lphSave();paHeft()}">Zurücksetzen</button>
+    </div>
+    <p class="small muted" style="margin:.7rem 0 0">Tipp: Erstelle zuerst das Lastenheft, wechsle dann auf Pflichtenheft – Kopfdaten, Abschnitte und Anforderungen bleiben erhalten, du ergänzt nur die Umsetzungsspalte.</p>
+  </div>`;
+}
+
+function lphWord(){
+  const L = S.lph, ist = L.typ === 'lasten';
+  const titel = ist ? 'Lastenheft' : 'Pflichtenheft';
+  const abs = [
+    {typ:'t', text:titel},
+    {typ:'p', text:'Projekt: ' + (L.kopf.projekt || '______________________')},
+    {typ:'tbl', tabelle:{kopf:['Angabe','Inhalt'], breiten:[2600,6400], zeilen:[
+      ['Auftraggeber', L.kopf.ag||''], ['Auftragnehmer', L.kopf.an||''],
+      ['Verfasser', L.kopf.autor||''], ['Version', L.kopf.version||''], ['Datum', L.kopf.datum||'']]}},
+    {typ:'p', text: ist
+      ? 'Dieses Lastenheft beschreibt lösungsneutral die Gesamtheit der Forderungen des Auftraggebers an die Lieferungen und Leistungen des Auftragnehmers.'
+      : 'Dieses Pflichtenheft beschreibt, wie und womit die Anforderungen des Lastenhefts umgesetzt werden. Es wird nach der Freigabe durch den Auftraggeber Vertragsbestandteil.'}
+  ];
+  LPH_ABSCHNITTE.forEach(s=>{
+    abs.push({typ:'h1', text:s.t});
+    (L.ab[s.id] || '…').split(/\n+/).filter(z=>z.trim()).forEach(z=>abs.push({typ:'p', text:z.trim()}));
+  });
+  abs.push({typ:'h1', text:'Anforderungskatalog'});
+  const kopf = ist ? ['ID','Anforderung','Art','Prio','Prüfkriterium'] : ['ID','Anforderung','Prio','Prüfkriterium','Umsetzung'];
+  const breiten = ist ? [800,3400,1500,800,2500] : [800,2600,700,2300,2600];
+  const zeilen = L.anf.map((a,i)=> ist
+    ? [lphId(i), (a.t?a.t+': ':'')+(a.b||''), a.typ, a.prio, a.pruef||'']
+    : [lphId(i), (a.t?a.t+': ':'')+(a.b||''), a.prio, a.pruef||'', a.um||'']);
+  abs.push({typ:'tbl', tabelle:{kopf, breiten, zeilen}});
+  const fkt = L.anf.filter(a=>a.typ==='funktional').length;
+  abs.push({typ:'p', text:`Erfasst sind ${L.anf.length} Anforderungen, davon ${fkt} funktional und ${L.anf.length-fkt} nichtfunktional.`});
+  docxErzeugen(abs, titel + '.docx');
+}
+
+/* ===================== PROJEKTDOKUMENTATION ===================== */
+const DOK_ABSCHNITTE = PA_DOKU.filter(g => g[0] !== 'Gestaltung der Dokumentation');
+const DOK_ZEICHEN_PRO_SEITE = 2800;
+if(!S.dok) S.dok = JSON.parse(localStorage.getItem('pmw_dok') || '{}');
+const dokSave = () => localStorage.setItem('pmw_dok', JSON.stringify(S.dok));
+function dokSeiten(t){ return (String(t||'').length) / DOK_ZEICHEN_PRO_SEITE; }
+
+function paDokuTool(){
+  const gesamtZeichen = DOK_ABSCHNITTE.reduce((a,[g])=>a+String(S.dok[g]||'').length,0);
+  const seiten = gesamtZeichen / DOK_ZEICHEN_PRO_SEITE;
+  const ok = seiten <= 15;
+  const kriterien = DOK_ABSCHNITTE.reduce((a,[,items])=>a+items.length,0);
+  const abgedeckt = DOK_ABSCHNITTE.reduce((a,[g,items])=>{
+    const t = String(S.dok[g]||'').toLowerCase();
+    return a + items.filter(i=>{
+      const w = i.toLowerCase().replace(/[()]/g,' ').split(/[\s,/–-]+/).filter(x=>x.length>5);
+      return w.length ? w.some(x=>t.includes(x.slice(0,7))) : t.length>40;
+    }).length;
+  },0);
+  $('#paBody').innerHTML = `
+  <div class="card">
+    <h3>Doku-Editor</h3>
+    <p class="small muted">Schreibe die Projektdokumentation abschnittsweise entlang des Bewertungsrasters. Der Editor schätzt den Seitenumfang laufend mit und prüft, ob jedes Bewertungskriterium inhaltlich vorkommt. Am Ende erzeugt er eine fertig formatierte Word-Datei.</p>
+    <div class="statgrid" style="margin-top:.9rem">
+      <div class="stat"><b style="color:${ok?'var(--teal)':'var(--red)'}">${seiten.toLocaleString('de-DE',{maximumFractionDigits:1})}</b><small>geschätzte Seiten von 15</small></div>
+      <div class="stat"><b>${gesamtZeichen.toLocaleString('de-DE')}</b><small>Zeichen</small></div>
+      <div class="stat"><b>${abgedeckt}/${kriterien}</b><small>Kriterien erkannt</small></div>
+    </div>
+    <div class="bar" style="margin-top:.8rem"><i style="width:${Math.min(seiten/15*100,100)}%;background:${ok?'var(--teal)':'var(--red)'}"></i></div>
+    <p class="small muted" style="margin:.6rem 0 0">Schätzung auf Basis von rund ${DOK_ZEICHEN_PRO_SEITE.toLocaleString('de-DE')} Zeichen je Seite bei Schriftgrad 11 und 1,3-fachem Zeilenabstand. Abbildungen und Tabellen kommen hinzu – plane Reserve ein.</p>
+  </div>
+
+  ${DOK_ABSCHNITTE.map(([g,items])=>{
+    const t = S.dok[g] || '', s = dokSeiten(t);
+    const tl = t.toLowerCase();
+    const treffer = items.map(i=>{
+      const w = i.toLowerCase().replace(/[()]/g,' ').split(/[\s,/–-]+/).filter(x=>x.length>5);
+      return {i, ok: w.length ? w.some(x=>tl.includes(x.slice(0,7))) : tl.length>40};
+    });
+    const offen = treffer.filter(x=>!x.ok).length;
+    return `
+    <div class="card" style="border-left:3px solid ${offen===0&&t?'var(--ok)':t?'var(--amber)':'var(--line)'}">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:.6rem">
+        <h3 style="margin:0">${g}</h3>
+        <span class="mono small muted">${s.toLocaleString('de-DE',{maximumFractionDigits:1})} S. · ${treffer.length-offen}/${treffer.length}</span>
+      </div>
+      <textarea rows="6" placeholder="…" oninput="S.dok['${g.replace(/'/g,"\\'")}']=this.value;dokSave()" onblur="paDokuTool()"
+        style="margin:.7rem 0 .5rem;font-size:.9rem;line-height:1.55">${esc(t)}</textarea>
+      <ul class="tight small" style="margin:0">
+        ${treffer.map(x=>`<li style="color:${x.ok?'var(--ok)':'var(--ink-dim)'}">${x.ok?'✓':'○'} ${x.i}</li>`).join('')}
+      </ul>
+    </div>`}).join('')}
+
+  <div class="card">
+    <h3>Ausgabe</h3>
+    <p class="small muted">Die Word-Datei enthält Deckblatt, Inhaltsangabe der Abschnitte und deinen Text, formatiert mit Schriftgrad 11 und 1,3-fachem Zeilenabstand.</p>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem">
+      <button class="btn primary" onclick="dokWord()">📄 Dokumentation als Word-Datei</button>
+      <button class="btn ghost sm" onclick="if(confirm('Alle Texte der Dokumentation löschen?')){S.dok={};dokSave();paDokuTool()}">Zurücksetzen</button>
+    </div>
+    <div class="note warn" style="margin-top:1rem;margin-bottom:0"><b>Vor der Abgabe</b>
+    Der Editor prüft Umfang und Vollständigkeit, nicht die inhaltliche Qualität. Denk an das unterschriebene Protokoll über die durchgeführte Projektarbeit, die Anlagen mit höchstens 17 Seiten, die Zusammenfassung zu einer PDF unter 5 MB und die Offenlegung eingesetzter KI-Werkzeuge.</div>
+  </div>`;
+}
+
+function dokWord(){
+  const abs = [
+    {typ:'t', text:'Projektdokumentation'},
+    {typ:'p', text:'Betriebliche Projektarbeit · Fachinformatiker für Systemintegration'},
+    {typ:'tbl', tabelle:{kopf:['Angabe','Inhalt'], breiten:[2600,6400], zeilen:[
+      ['Projektbezeichnung', (S.paa && S.paa.f1) ? S.paa.f1 : ''],
+      ['Prüfungsteilnehmer', ''], ['Ausbildungsbetrieb', ''],
+      ['Auftraggeber', (S.lph && S.lph.kopf.ag) ? S.lph.kopf.ag : ''],
+      ['Abgabedatum', new Date().toLocaleDateString('de-DE')]]}}
+  ];
+  DOK_ABSCHNITTE.forEach(([g,items])=>{
+    abs.push({typ:'h1', text:g});
+    const t = String(S.dok[g]||'').trim();
+    if(t) t.split(/\n+/).filter(z=>z.trim()).forEach(z=>abs.push({typ:'p', text:z.trim()}));
+    else items.forEach(i=>abs.push({typ:'h2', text:i},{typ:'p', text:'…'}));
+    if(/Ressourcen/.test(g)){
+      abs.push({typ:'h2', text:'Zeitplanung im Überblick'});
+      abs.push({typ:'tbl', tabelle:pazGanttTabelle()});
+      abs.push({typ:'p', text:'Balkenplan der Projektphasen über die Bearbeitungszeit. Türkis: Projektphasen, violett: Dokumentation.'});
+    }
+  });
+  docxErzeugen(abs, 'Projektdokumentation.docx');
+}
+
+/* ===================== ZEITPLAN ALS GANTT ===================== */
+function pazGantt(){
+  const phasen = PAZ.filter(p => +p.h > 0);
+  const summe = phasen.reduce((a,p)=>a+(+p.h||0), 0) || 1;
+  const labelW = 168, rowH = 30, headH = 30, padR = 30;
+  const px = Math.max(11, Math.min(26, 640/summe));
+  const chartW = summe * px, W = labelW + chartW + padR;
+  const H = headH + phasen.length*rowH + 34;
+  const x = t => labelW + t*px;
+  const schritt = summe <= 20 ? 2 : summe <= 60 ? 4 : 8;
+
+  let achse = '';
+  for(let t=0; t<=summe; t+=schritt){
+    achse += `<line x1="${x(t)}" y1="${headH-6}" x2="${x(t)}" y2="${headH+phasen.length*rowH}" style="stroke:#22384f"/>
+              <text x="${x(t)}" y="${headH-12}" text-anchor="middle" style="fill:#6b8299;font-size:10px;font-family:var(--mono)">${t}</text>`;
+  }
+  let lauf = 0;
+  const balken = phasen.map((p,i)=>{
+    const start = lauf, dauer = +p.h||0; lauf += dauer;
+    const y = headH + i*rowH + 6, h = rowH - 14;
+    const doku = /dokumentation/i.test(p.p);
+    const bw = Math.max(dauer*px, 3);
+    const txt = bw > 26 ? `<text x="${x(start)+bw/2}" y="${y+h/2+3.5}" text-anchor="middle" style="fill:#04231f;font-size:10px;font-weight:600;font-family:var(--mono)">${String(dauer).replace('.',',')}</text>` : '';
+    return `<g>
+      <text x="6" y="${y+h/2+4}" style="fill:#e6edf5;font-size:11px">${esc(String(p.p).split('–')[0].trim().slice(0,20))}</text>
+      <line x1="${labelW-8}" y1="${y+h/2}" x2="${labelW}" y2="${y+h/2}" style="stroke:#22384f"/>
+      <rect x="${x(start)}" y="${y}" width="${bw}" height="${h}" rx="3" style="fill:${doku?'#a78bfa':'#2dd4bf'}">
+        <title>${esc(p.p)}: Stunde ${start} bis ${lauf}</title></rect>
+      ${txt}
+      <rect x="${x(lauf)-5}" y="${y+h/2-5}" width="10" height="10" transform="rotate(45 ${x(lauf)} ${y+h/2})" style="fill:#f5b74e"/>
+    </g>`;
+  }).join('');
+
+  const grenze = summe >= 40 ? `<line x1="${x(40)}" y1="${headH-8}" x2="${x(40)}" y2="${headH+phasen.length*rowH+4}" style="stroke:#f87171;stroke-width:1.4;stroke-dasharray:4 3"/>
+    <text x="${x(40)}" y="${headH+phasen.length*rowH+20}" text-anchor="end" style="fill:#f87171;font-size:10px;font-family:var(--mono)">Grenze 40 h</text>` : '';
+
+  return `
+  <div class="npwrap">
+    <svg width="${W}" height="${H}" style="display:block">
+      <text x="6" y="${headH-12}" style="fill:#6b8299;font-size:10px;font-family:var(--mono)">Phase</text>
+      <line x1="${labelW}" y1="${headH-6}" x2="${W-padR+10}" y2="${headH-6}" style="stroke:#22384f"/>
+      ${achse}${balken}${grenze}
+    </svg>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:1rem;margin-top:.5rem;font-size:.78rem;color:var(--ink-dim)">
+    <span><span style="display:inline-block;width:14px;height:9px;background:#2dd4bf;border-radius:2px;vertical-align:middle"></span> Projektphase</span>
+    <span><span style="display:inline-block;width:14px;height:9px;background:#a78bfa;border-radius:2px;vertical-align:middle"></span> Dokumentation</span>
+    <span><span style="display:inline-block;width:9px;height:9px;background:#f5b74e;transform:rotate(45deg);vertical-align:middle"></span> Meilenstein am Phasenende</span>
+    <span>Zahl im Balken = Stunden · Achse in Stunden</span>
+  </div>`;
+}
+
+/* Gantt als Word-Tabelle: 20 Spalten zu je 2 Stunden */
+function pazGanttTabelle(){
+  const phasen = PAZ.filter(p => +p.h > 0);
+  const summe = phasen.reduce((a,p)=>a+(+p.h||0), 0);
+  const spalten = 20, proSpalte = Math.max(summe, 40) / spalten;
+  const brLabel = 3200, brRest = Math.round((9200 - brLabel)/spalten);
+  const kopf = [{t:'Phase', center:false}];
+  for(let i=1;i<=spalten;i++) kopf.push({t:(i%2===0)? String(Math.round(i*proSpalte)) : '', center:true, sz:14});
+  let lauf = 0;
+  const zeilen = phasen.map(p=>{
+    const start = lauf, ende = lauf + (+p.h||0); lauf = ende;
+    const doku = /dokumentation/i.test(p.p);
+    const z = [{t:String(p.p).slice(0,60), center:false}];
+    for(let i=0;i<spalten;i++){
+      const von = i*proSpalte, bis = (i+1)*proSpalte;
+      const belegt = start < bis && ende > von;
+      z.push({t:'', fill: belegt ? (doku ? 'C9B8F5' : '9BE3DA') : null, center:true});
+    }
+    return z;
+  });
+  zeilen.push([{t:'Gesamt: '+String(summe).replace('.',',')+' Stunden', center:false}, ...Array.from({length:spalten},()=>({t:'',center:true}))]);
+  return {kopf, breiten:[brLabel, ...Array.from({length:spalten},()=>brRest)], zeilen};
+}
+
+function pazWord(){
+  const summe = PAZ.reduce((a,p)=>a+(+p.h||0),0);
+  const doku = PAZ.filter(p=>/dokumentation/i.test(p.p)).reduce((a,p)=>a+(+p.h||0),0);
+  let lauf = 0;
+  const tab = {kopf:['Phase','Stunden','Anteil','Von Stunde','Bis Stunde'], breiten:[4000,1100,1100,1500,1500],
+    zeilen: PAZ.map(p=>{ const s=lauf; lauf+= (+p.h||0);
+      return [p.p, String(p.h).replace('.',','), (summe?Math.round(p.h/summe*100):0)+' %', String(s).replace('.',','), String(lauf).replace('.',',')]; })};
+  docxErzeugen([
+    {typ:'t', text:'Zeitplanung der Projektarbeit'},
+    {typ:'p', text:'Projekt: ' + ((S.paa && S.paa.f1) ? S.paa.f1 : '______________________')},
+    {typ:'h1', text:'Phasen und Zeitaufwand'},
+    {typ:'tbl', tabelle:tab},
+    {typ:'p', text:`Gesamtaufwand ${String(summe).replace('.',',')} Stunden, davon ${String(doku).replace('.',',')} Stunden für die Dokumentation (${summe?Math.round(doku/summe*100):0} %).`},
+    {typ:'h1', text:'Balkenplan'},
+    {typ:'tbl', tabelle:pazGanttTabelle()},
+    {typ:'p', text:'Die Kopfzeile gibt die Projektstunden an. Türkis hinterlegt sind die Projektphasen, violett die Dokumentation.'}
+  ], 'Zeitplanung.docx');
 }
 
 /* ===================== NAVIGATION ===================== */
@@ -6178,7 +6664,7 @@ function renderInfo(){
       <p class="small">Projektmanagement ist Bestandteil von Teil 1 der gestreckten Abschlussprüfung sowie des Prüfungsbereichs „Planen eines Softwareproduktes" bzw. der Projektarbeit in Teil 2. Die Inhalte orientieren sich am Rahmenlehrplan, an DIN 69901 und an gängiger Prüfungspraxis. Verbindlich sind allein die Vorgaben deiner zuständigen Kammer.</p>
       <h4>Datenspeicherung</h4>
       <p class="small">Lernfortschritt und Quizergebnisse liegen ausschließlich im Local Storage deines Browsers. Es werden keine Daten übertragen.</p>
-      <button class="btn sm" onclick="if(confirm('Wirklich allen Lernfortschritt löschen?')){localStorage.removeItem('pmw_read');localStorage.removeItem('pmw_quiz');localStorage.removeItem('pmw_abl');localStorage.removeItem('pmw_pa');localStorage.removeItem('pmw_paa');localStorage.removeItem('pmw_paz');localStorage.removeItem('pmw_pas');S.read=[];S.quiz={};S.abl={};S.pa={};S.paa={};S.save();updateProgress();renderInfo();alert('Lernfortschritt zurückgesetzt.')}">Lernfortschritt zurücksetzen</button>
+      <button class="btn sm" onclick="if(confirm('Wirklich allen Lernfortschritt löschen?')){localStorage.removeItem('pmw_read');localStorage.removeItem('pmw_quiz');localStorage.removeItem('pmw_abl');localStorage.removeItem('pmw_pa');localStorage.removeItem('pmw_paa');localStorage.removeItem('pmw_paz');localStorage.removeItem('pmw_pas');localStorage.removeItem('pmw_lph');localStorage.removeItem('pmw_dok');S.read=[];S.quiz={};S.abl={};S.pa={};S.paa={};S.save();updateProgress();renderInfo();alert('Lernfortschritt zurückgesetzt.')}">Lernfortschritt zurücksetzen</button>
     </div>
     <div class="card">
       <h3>Zur Startseite hinzufügen</h3>
