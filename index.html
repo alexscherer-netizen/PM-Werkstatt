@@ -3549,7 +3549,7 @@ let PAZ = JSON.parse(localStorage.getItem('pmw_paz') || 'null') || [
 const pazSave = () => localStorage.setItem('pmw_paz', JSON.stringify(PAZ));
 
 let paTab = 'ueberblick';
-const PATABS = [['ueberblick','Überblick'],['antrag','Projektantrag'],['assistent','Antrags-Assistent'],['zeit','Zeitplan'],['heft','Lasten-/Pflichtenheft'],['doku','Doku-Regeln'],['dokutool','Doku-Editor'],['praes','Präsentation & Fachgespräch'],['note','Notenrechner']];
+const PATABS = [['ueberblick','Überblick'],['antrag','Projektantrag'],['assistent','Antrags-Assistent'],['zeit','Zeitplan'],['heft','Lasten-/Pflichtenheft'],['akt','Aktivitätsdiagramm'],['doku','Doku-Regeln'],['dokutool','Doku-Editor'],['praes','Präsentation & Fachgespräch'],['note','Notenrechner']];
 
 function renderProjekt(){
   $('#v-projekt').innerHTML = `
@@ -3561,7 +3561,7 @@ function renderProjekt(){
       ${PATABS.map(([k,l])=>`<button class="btn sm ${k===paTab?'primary':''}" onclick="paTab='${k}';renderProjekt()">${l}</button>`).join('')}
     </div>
     <div id="paBody"></div>`;
-  ({ueberblick:paUeberblick, antrag:paAntrag, assistent:paAssistent, zeit:paZeit, heft:paHeft, doku:paDoku, dokutool:paDokuTool, praes:paPraes, note:paNote})[paTab]();
+  ({ueberblick:paUeberblick, antrag:paAntrag, assistent:paAssistent, zeit:paZeit, heft:paHeft, akt:paAkt, doku:paDoku, dokutool:paDokuTool, praes:paPraes, note:paNote})[paTab]();
 }
 
 function paCheckliste(key, titel, punkte){
@@ -4235,7 +4235,7 @@ function paSeiten(){
     <div class="bar" style="margin:.7rem 0"><i style="width:${Math.min(summe/15*100,100)}%;background:${ok?'var(--teal)':'var(--red)'}"></i></div>
     <div style="display:flex;gap:.5rem;flex-wrap:wrap">
       <button class="btn sm" onclick="PAS.push({k:'Neuer Abschnitt',s:1});pasSave();paDoku()">+ Abschnitt</button>
-      <button class="btn sm ghost" onclick="if(confirm('Seitenbudget auf die Vorlage zurücksetzen?')){localStorage.removeItem('pmw_pas');localStorage.removeItem('pmw_lph');localStorage.removeItem('pmw_dok');location.reload()}">Vorlage laden</button>
+      <button class="btn sm ghost" onclick="if(confirm('Seitenbudget auf die Vorlage zurücksetzen?')){localStorage.removeItem('pmw_pas');localStorage.removeItem('pmw_lph');localStorage.removeItem('pmw_dok');localStorage.removeItem('pmw_akt');location.reload()}">Vorlage laden</button>
     </div>
     <p class="small" style="margin:.7rem 0 0;color:${ok?'var(--ok)':'var(--red)'}">
       ${ok?`✓ ${String(15-summe).replace('.',',')} Seiten Reserve.`:`✗ Das Budget ist um ${String(summe-15).replace('.',',')} Seiten überschritten.`}
@@ -4781,6 +4781,331 @@ function pazWord(){
     {typ:'tbl', tabelle:pazGanttTabelle()},
     {typ:'p', text:'Die Kopfzeile gibt die Projektstunden an. Türkis hinterlegt sind die Projektphasen, violett die Dokumentation.'}
   ], 'Zeitplanung.docx');
+}
+
+/* ===================== AKTIVITÄTSDIAGRAMM ===================== */
+const AKT_MASS = {bw:230, bh:46, gap:28, rw:130, rh:62, spalte:165, bar:12};
+
+const AKT_BEISPIELE = [
+{titel:'Störungsbearbeitung im Support',
+ kurz:'Klassischer Ablauf mit zwei Entscheidungen – gut geeignet, um im Doku-Abschnitt „Prozessschritte" den Ist-Prozess darzustellen.',
+ schritte:[
+  {typ:'aktion', t:'Störungsmeldung entgegennehmen'},
+  {typ:'aktion', t:'Ticket erfassen und kategorisieren'},
+  {typ:'entscheidung', t:'Lösung in der Wissensdatenbank vorhanden?',
+    ja:['Lösung anwenden'], nein:['An 2nd Level eskalieren','Ursache analysieren','Lösung erarbeiten']},
+  {typ:'aktion', t:'Lösung umsetzen und dokumentieren'},
+  {typ:'entscheidung', t:'Anwender bestätigt die Behebung?',
+    ja:['Ticket schließen'], nein:['Ticket wieder öffnen','Erneut bearbeiten']},
+  {typ:'aktion', t:'Wissensdatenbank ergänzen'}
+ ]},
+{titel:'Client-Rollout mit Pilotphase',
+ kurz:'Enthält eine Entscheidung nach dem Pilot und einen parallelen Abschnitt – passend zum Abschnitt „Durchführung".',
+ schritte:[
+  {typ:'aktion', t:'Hardware inventarisieren'},
+  {typ:'parallel', a:['Anwendungskompatibilität prüfen'], b:['Image und Profile erstellen']},
+  {typ:'aktion', t:'Pilot mit drei Geräten durchführen'},
+  {typ:'entscheidung', t:'Pilot erfolgreich abgeschlossen?',
+    ja:['Rollout freigeben'], nein:['Fehler analysieren','Image anpassen','Pilot wiederholen']},
+  {typ:'aktion', t:'Serienrollout in Gruppen durchführen'},
+  {typ:'aktion', t:'Anwender einweisen'},
+  {typ:'aktion', t:'An den Betrieb übergeben'}
+ ]},
+{titel:'Datensicherung mit Prüfung',
+ kurz:'Zeigt eine parallele Sicherung mit anschließender Zusammenführung und Fehlerbehandlung.',
+ schritte:[
+  {typ:'aktion', t:'Sicherungsauftrag starten'},
+  {typ:'parallel', a:['Datenbank sichern','Prüfsumme bilden'], b:['Dateiserver sichern','Prüfsumme bilden']},
+  {typ:'aktion', t:'Sicherung auf Offline-Medium auslagern'},
+  {typ:'entscheidung', t:'Prüfsummen stimmen überein?',
+    ja:['Sicherungslauf protokollieren'], nein:['Alarm auslösen','Lauf wiederholen']},
+  {typ:'aktion', t:'Aufbewahrungsfristen anwenden'}
+ ]}
+];
+
+function aktStandard(){ return {titel:'Mein Ablauf', schritte:[{typ:'aktion', t:'Erste Aktivität'}]}; }
+if(!S.akt) S.akt = JSON.parse(localStorage.getItem('pmw_akt') || 'null') || aktStandard();
+const aktSave = () => localStorage.setItem('pmw_akt', JSON.stringify(S.akt));
+
+function aktZweigHoehe(liste){
+  const n = Math.max(liste.filter(x=>String(x).trim()).length, 1);
+  return n*(AKT_MASS.bh + AKT_MASS.gap);
+}
+function aktHoehe(schritte){
+  return schritte.reduce((h,s)=>{
+    if(s.typ==='entscheidung') return h + 22 + AKT_MASS.rh + AKT_MASS.gap + Math.max(aktZweigHoehe(s.ja||[]), aktZweigHoehe(s.nein||[])) + AKT_MASS.rh + AKT_MASS.gap;
+    if(s.typ==='parallel') return h + AKT_MASS.bar + AKT_MASS.gap + Math.max(aktZweigHoehe(s.a||[]), aktZweigHoehe(s.b||[])) + AKT_MASS.bar + AKT_MASS.gap;
+    return h + AKT_MASS.bh + AKT_MASS.gap;
+  }, 0);
+}
+function aktZeichne(modell){
+  const M = AKT_MASS;
+  const verzweigt = modell.schritte.some(s=>s.typ==='entscheidung'||s.typ==='parallel');
+  const W = verzweigt ? 700 : 380, cx = W/2;
+  const H = 60 + aktHoehe(modell.schritte) + 60 + 40;
+  const teile = [];
+  const pfeil = (x1,y1,x2,y2,label) => {
+    const knick = (x1!==x2 && y1!==y2)
+      ? `M${x1},${y1} L${x1},${(y1+y2)/2} L${x2},${(y1+y2)/2} L${x2},${y2}`
+      : `M${x1},${y1} L${x2},${y2}`;
+    return `<path d="${knick}" fill="none" style="stroke:#5b7c99;stroke-width:1.6" marker-end="url(#aktPfeil)"/>` +
+      (label ? `<text x="${x1+(x2>x1?10:-10)}" y="${y1+16}" text-anchor="${x2>x1?'start':'end'}" style="fill:#f5b74e;font-size:11px;font-family:var(--mono)">[${label}]</text>` : '');
+  };
+  const box = (x,y,t) => `<g><rect x="${x-M.bw/2}" y="${y}" width="${M.bw}" height="${M.bh}" rx="10"
+      style="fill:#132132;stroke:#2dd4bf;stroke-width:1.4"/>
+      ${aktText(t, x, y+M.bh/2+4, M.bw-16)}</g>`;
+  const raute = (x,y,t) => `<g><text x="8" y="${y-9}" style="fill:#f5b74e;font-size:12px;font-weight:600">${esc(String(t).slice(0,74))}</text>
+      <path d="M${x},${y} L${x+M.rw/2},${y+M.rh/2} L${x},${y+M.rh} L${x-M.rw/2},${y+M.rh/2} Z"
+      style="fill:#1a2942;stroke:#f5b74e;stroke-width:1.4"/></g>`;
+
+  let y = 14;
+  teile.push(`<ellipse cx="${cx}" cy="${y+13}" rx="15" ry="13" style="fill:#2dd4bf"/>`);
+  let vonY = y + 26;
+  y += 40;
+
+  modell.schritte.forEach(s=>{
+    if(s.typ==='aktion'){
+      teile.push(pfeil(cx, vonY, cx, y));
+      teile.push(box(cx, y, s.t));
+      vonY = y + M.bh; y += M.bh + M.gap;
+    } else if(s.typ==='entscheidung'){
+      y += 22;
+      teile.push(pfeil(cx, vonY, cx, y));
+      teile.push(raute(cx, y, s.t));
+      const oben = y + M.rh/2, nachRaute = y + M.rh;
+      const zweigStart = nachRaute + M.gap;
+      const hoehe = Math.max(aktZweigHoehe(s.ja||[]), aktZweigHoehe(s.nein||[]));
+      [['ja', s.ja||[], cx - M.spalte], ['nein', s.nein||[], cx + M.spalte]].forEach(([lab, liste, zx])=>{
+        const akt = liste.filter(x=>String(x).trim());
+        teile.push(`<path d="M${cx + (lab==='ja'?-M.rw/2:M.rw/2)},${oben} L${zx},${oben} L${zx},${zweigStart}" fill="none" style="stroke:#5b7c99;stroke-width:1.6" marker-end="url(#aktPfeil)"/>
+          <text x="${zx + (lab==='ja'?8:-8)}" y="${oben-8}" text-anchor="${lab==='ja'?'start':'end'}" style="fill:#f5b74e;font-size:11px;font-family:var(--mono)">[${lab}]</text>`);
+        let zy = zweigStart, letzt = zweigStart;
+        akt.forEach((t,i)=>{
+          if(i>0) teile.push(pfeil(zx, letzt, zx, zy));
+          teile.push(box(zx, zy, t));
+          letzt = zy + M.bh; zy += M.bh + M.gap;
+        });
+        if(!akt.length){ teile.push(`<text x="${zx}" y="${zweigStart+24}" text-anchor="middle" style="fill:#6b8299;font-size:11px">(ohne weitere Aktivität)</text>`); letzt = zweigStart + M.bh; }
+        const mergeY = zweigStart + hoehe;
+        teile.push(`<path d="M${zx},${letzt} L${zx},${mergeY + M.rh/2} L${cx + (lab==='ja'?-M.rw/2:M.rw/2)},${mergeY + M.rh/2}" fill="none" style="stroke:#5b7c99;stroke-width:1.6" marker-end="url(#aktPfeil)"/>`);
+      });
+      const mergeY = zweigStart + hoehe;
+      teile.push(`<path d="M${cx},${mergeY} L${cx+M.rw/2},${mergeY+M.rh/2} L${cx},${mergeY+M.rh} L${cx-M.rw/2},${mergeY+M.rh/2} Z" style="fill:#1a2942;stroke:#5b7c99;stroke-width:1.4"/>`);
+      vonY = mergeY + M.rh; y = mergeY + M.rh + M.gap;
+    } else if(s.typ==='parallel'){
+      teile.push(pfeil(cx, vonY, cx, y));
+      teile.push(`<rect x="${cx-200}" y="${y}" width="400" height="${M.bar}" rx="2" style="fill:#94a3b8"/>`);
+      const zweigStart = y + M.bar + M.gap;
+      const hoehe = Math.max(aktZweigHoehe(s.a||[]), aktZweigHoehe(s.b||[]));
+      [[s.a||[], cx - M.spalte], [s.b||[], cx + M.spalte]].forEach(([liste, zx])=>{
+        const akt = liste.filter(x=>String(x).trim());
+        teile.push(`<path d="M${zx},${y+M.bar} L${zx},${zweigStart}" fill="none" style="stroke:#5b7c99;stroke-width:1.6" marker-end="url(#aktPfeil)"/>`);
+        let zy = zweigStart, letzt = zweigStart;
+        akt.forEach((t,i)=>{
+          if(i>0) teile.push(pfeil(zx, letzt, zx, zy));
+          teile.push(box(zx, zy, t));
+          letzt = zy + M.bh; zy += M.bh + M.gap;
+        });
+        const joinY = zweigStart + hoehe;
+        teile.push(`<path d="M${zx},${letzt} L${zx},${joinY}" fill="none" style="stroke:#5b7c99;stroke-width:1.6" marker-end="url(#aktPfeil)"/>`);
+      });
+      const joinY = zweigStart + hoehe;
+      teile.push(`<rect x="${cx-200}" y="${joinY}" width="400" height="${M.bar}" rx="2" style="fill:#94a3b8"/>`);
+      vonY = joinY + M.bar; y = joinY + M.bar + M.gap;
+    }
+  });
+  teile.push(pfeil(cx, vonY, cx, y));
+  teile.push(`<circle cx="${cx}" cy="${y+14}" r="15" style="fill:none;stroke:#2dd4bf;stroke-width:2"/>
+              <circle cx="${cx}" cy="${y+14}" r="9" style="fill:#2dd4bf"/>`);
+
+  return `<svg width="${W}" height="${y+60}" viewBox="0 0 ${W} ${y+60}" xmlns="http://www.w3.org/2000/svg" style="display:block;background:#0d1620">
+    <defs><marker id="aktPfeil" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+      <polygon points="0 0, 9 3.5, 0 7" fill="#5b7c99"/></marker></defs>
+    ${teile.join('')}
+  </svg>`;
+}
+/* Text im Kasten auf zwei Zeilen umbrechen */
+function aktText(t, x, y, breite){
+  const s = String(t||''), max = Math.floor(breite/6.4);
+  if(s.length <= max) return `<text x="${x}" y="${y}" text-anchor="middle" style="fill:#e6edf5;font-size:12px">${esc(s)}</text>`;
+  const worte = s.split(' '); let z1='', z2='';
+  worte.forEach(w=>{ if((z1+' '+w).trim().length <= max && !z2) z1 = (z1+' '+w).trim(); else z2 = (z2+' '+w).trim(); });
+  return `<text x="${x}" y="${y-7}" text-anchor="middle" style="fill:#e6edf5;font-size:12px">${esc(z1)}</text>
+          <text x="${x}" y="${y+9}" text-anchor="middle" style="fill:#e6edf5;font-size:12px">${esc(z2.slice(0,max))}</text>`;
+}
+
+/* Ablauf als eingerückter Text – für die Word-Ausgabe */
+function aktZeilen(modell){
+  const z = [{typ:'li', text:'Start'}];
+  modell.schritte.forEach(s=>{
+    if(s.typ==='aktion') z.push({typ:'li', text:s.t});
+    else if(s.typ==='entscheidung'){
+      z.push({typ:'li', text:'Entscheidung: ' + s.t});
+      (s.ja||[]).filter(x=>x.trim()).forEach(t=>z.push({typ:'p', text:'        [ja] ' + t}));
+      (s.nein||[]).filter(x=>x.trim()).forEach(t=>z.push({typ:'p', text:'        [nein] ' + t}));
+      z.push({typ:'p', text:'        Zusammenführung der Zweige'});
+    } else if(s.typ==='parallel'){
+      z.push({typ:'li', text:'Parallelisierung (Fork)'});
+      (s.a||[]).filter(x=>x.trim()).forEach(t=>z.push({typ:'p', text:'        Strang A: ' + t}));
+      (s.b||[]).filter(x=>x.trim()).forEach(t=>z.push({typ:'p', text:'        Strang B: ' + t}));
+      z.push({typ:'li', text:'Synchronisation (Join)'});
+    }
+  });
+  z.push({typ:'li', text:'Ende'});
+  return z;
+}
+
+let aktBspIdx = 0, aktBspOffen = false;
+function aktBeispielUebernehmen(i){
+  const b = AKT_BEISPIELE[i];
+  if(!confirm('Dein aktuelles Diagramm wird durch das Beispiel ersetzt. Fortfahren?')) return;
+  S.akt = {titel:b.titel, schritte: JSON.parse(JSON.stringify(b.schritte))};
+  aktSave(); aktBspOffen = false; paAkt(); window.scrollTo({top:0,behavior:'instant'});
+}
+function aktZweigFeld(i, feld, j, wert){
+  return `<div style="display:flex;gap:.4rem;margin-bottom:.3rem">
+    <input value="${esc(wert)}" oninput="S.akt.schritte[${i}].${feld}[${j}]=this.value;aktSave()" onblur="paAkt()" style="flex:1">
+    <button class="btn sm ghost" onclick="S.akt.schritte[${i}].${feld}.splice(${j},1);aktSave();paAkt()">✕</button></div>`;
+}
+
+function paAkt(){
+  const m = S.akt;
+  const b = AKT_BEISPIELE[aktBspIdx];
+  $('#paBody').innerHTML = `
+  <div class="card">
+    <h3>Aktivitätsdiagramm</h3>
+    <p class="small muted">Das UML-Aktivitätsdiagramm zeigt einen Ablauf mit Verzweigungen und parallelen Strängen. In der Projektdokumentation gehört es in die Abschnitte „Auftragsbearbeitung – Prozessschritte und Vorgehensweise" sowie in die Ist-Analyse, um den bestehenden Prozess darzustellen.</p>
+    <div class="tblwrap"><table>
+      <tr><th>Element</th><th>Bedeutung</th></tr>
+      <tr><td>Ausgefüllter Kreis</td><td>Startknoten – genau einer je Diagramm</td></tr>
+      <tr><td>Abgerundetes Rechteck</td><td>Aktion oder Aktivität, im Aktiv formuliert</td></tr>
+      <tr><td>Raute</td><td>Entscheidungsknoten mit beschrifteten Bedingungen in eckigen Klammern; als zweite Raute die Zusammenführung</td></tr>
+      <tr><td>Dicker Balken</td><td>Parallelisierung (Fork) und Synchronisation (Join)</td></tr>
+      <tr><td>Ring mit Punkt</td><td>Endknoten</td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Beispiele</h3>
+    <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin:.7rem 0">
+      ${AKT_BEISPIELE.map((x,i)=>`<button class="btn sm ${i===aktBspIdx?'primary':''}" onclick="aktBspIdx=${i};aktBspOffen=true;paAkt()">${x.titel}</button>`).join('')}
+    </div>
+    <p class="small">${b.kurz}</p>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin:.7rem 0">
+      <button class="btn" onclick="aktBspOffen=${!aktBspOffen};paAkt()">${aktBspOffen?'Beispiel ausblenden':'Beispiel anzeigen'}</button>
+      <button class="btn primary" onclick="aktBeispielUebernehmen(${aktBspIdx})">Als Startpunkt übernehmen</button>
+    </div>
+    ${aktBspOffen ? `<div class="npwrap">${aktZeichne({titel:b.titel, schritte:b.schritte})}</div>` : ''}
+  </div>
+
+  <div class="card">
+    <h3>Eigenes Diagramm</h3>
+    <div class="field"><label class="fl">Titel des Ablaufs</label>
+      <input value="${esc(m.titel)}" oninput="S.akt.titel=this.value;aktSave()"></div>
+    ${m.schritte.map((s,i)=>`
+      <div style="border:1px solid var(--line);border-radius:8px;padding:.75rem;margin-bottom:.7rem">
+        <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem">
+          <span class="mono small muted">${i+1}</span>
+          <select onchange="aktTypWechsel(${i}, this.value)" style="max-width:170px">
+            <option value="aktion" ${s.typ==='aktion'?'selected':''}>Aktion</option>
+            <option value="entscheidung" ${s.typ==='entscheidung'?'selected':''}>Entscheidung</option>
+            <option value="parallel" ${s.typ==='parallel'?'selected':''}>Parallel</option>
+          </select>
+          <div style="margin-left:auto;display:flex;gap:.3rem">
+            ${i>0?`<button class="btn sm ghost" title="nach oben" onclick="aktSchieben(${i},-1)">↑</button>`:''}
+            ${i<m.schritte.length-1?`<button class="btn sm ghost" title="nach unten" onclick="aktSchieben(${i},1)">↓</button>`:''}
+            ${m.schritte.length>1?`<button class="btn sm ghost" onclick="S.akt.schritte.splice(${i},1);aktSave();paAkt()">✕</button>`:''}
+          </div>
+        </div>
+        ${s.typ==='aktion' ? `<input value="${esc(s.t||'')}" placeholder="Aktivität im Aktiv, z. B. Ticket erfassen" oninput="S.akt.schritte[${i}].t=this.value;aktSave()" onblur="paAkt()">`
+        : s.typ==='entscheidung' ? `
+          <input value="${esc(s.t||'')}" placeholder="Bedingung als Frage, z. B. Pilot erfolgreich?" oninput="S.akt.schritte[${i}].t=this.value;aktSave()" onblur="paAkt()" style="margin-bottom:.6rem">
+          <label class="fl">Zweig [ja]</label>
+          ${(s.ja||[]).map((t,j)=>aktZweigFeld(i,'ja',j,t)).join('')}
+          <button class="btn sm ghost" style="margin-bottom:.6rem" onclick="S.akt.schritte[${i}].ja.push('');aktSave();paAkt()">+ Aktivität</button>
+          <label class="fl">Zweig [nein]</label>
+          ${(s.nein||[]).map((t,j)=>aktZweigFeld(i,'nein',j,t)).join('')}
+          <button class="btn sm ghost" onclick="S.akt.schritte[${i}].nein.push('');aktSave();paAkt()">+ Aktivität</button>`
+        : `<label class="fl">Strang A</label>
+          ${(s.a||[]).map((t,j)=>aktZweigFeld(i,'a',j,t)).join('')}
+          <button class="btn sm ghost" style="margin-bottom:.6rem" onclick="S.akt.schritte[${i}].a.push('');aktSave();paAkt()">+ Aktivität</button>
+          <label class="fl">Strang B</label>
+          ${(s.b||[]).map((t,j)=>aktZweigFeld(i,'b',j,t)).join('')}
+          <button class="btn sm ghost" onclick="S.akt.schritte[${i}].b.push('');aktSave();paAkt()">+ Aktivität</button>`}
+      </div>`).join('')}
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <button class="btn sm" onclick="S.akt.schritte.push({typ:'aktion',t:''});aktSave();paAkt()">+ Aktion</button>
+      <button class="btn sm" onclick="S.akt.schritte.push({typ:'entscheidung',t:'',ja:[''],nein:['']});aktSave();paAkt()">+ Entscheidung</button>
+      <button class="btn sm" onclick="S.akt.schritte.push({typ:'parallel',a:[''],b:['']});aktSave();paAkt()">+ Parallelität</button>
+      <button class="btn sm ghost" onclick="if(confirm('Diagramm zurücksetzen?')){S.akt=aktStandard();aktSave();paAkt()}">Zurücksetzen</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Vorschau: ${esc(m.titel)}</h3>
+    <div class="npwrap" id="aktSvg">${aktZeichne(m)}</div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.9rem">
+      <button class="btn primary" onclick="aktPng()">🖼 Als PNG herunterladen</button>
+      <button class="btn" onclick="aktSvgDownload()">Als SVG herunterladen</button>
+      <button class="btn" onclick="aktWord()">📄 Ablaufbeschreibung als Word</button>
+    </div>
+    <p class="small muted" style="margin:.6rem 0 0">Das PNG lässt sich direkt in Word oder PowerPoint einfügen. Die Word-Datei enthält die Ablaufbeschreibung als eingerückte Schrittfolge – nützlich als Textform neben der Grafik.</p>
+  </div>`;
+}
+function aktTypWechsel(i, typ){
+  const alt = S.akt.schritte[i];
+  S.akt.schritte[i] = typ==='aktion' ? {typ, t:alt.t||''}
+    : typ==='entscheidung' ? {typ, t:alt.t||'', ja:alt.ja||[''], nein:alt.nein||['']}
+    : {typ, a:alt.a||[''], b:alt.b||['']};
+  aktSave(); paAkt();
+}
+function aktSchieben(i, d){
+  const a = S.akt.schritte; const j = i+d;
+  if(j<0 || j>=a.length) return;
+  [a[i], a[j]] = [a[j], a[i]]; aktSave(); paAkt();
+}
+function aktSvgText(){
+  return aktZeichne(S.akt).replace(/style="fill:var\(--[^)]+\)"/g,'style="fill:#e6edf5"');
+}
+function aktDownload(blob, name){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 4000);
+}
+function aktSvgDownload(){
+  aktDownload(new Blob([aktSvgText()], {type:'image/svg+xml'}), (S.akt.titel||'Aktivitaetsdiagramm') + '.svg');
+}
+function aktPng(){
+  const svg = aktSvgText();
+  const img = new Image();
+  const url = URL.createObjectURL(new Blob([svg], {type:'image/svg+xml'}));
+  img.onload = ()=>{
+    const skala = 2;
+    const c = document.createElement('canvas');
+    c.width = img.width*skala; c.height = img.height*skala;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#0d1620'; ctx.fillRect(0,0,c.width,c.height);
+    ctx.drawImage(img, 0, 0, c.width, c.height);
+    URL.revokeObjectURL(url);
+    c.toBlob(b => aktDownload(b, (S.akt.titel||'Aktivitaetsdiagramm') + '.png'), 'image/png');
+  };
+  img.onerror = ()=>{ URL.revokeObjectURL(url); alert('Das PNG konnte nicht erzeugt werden. Nutze bitte den SVG-Export.'); };
+  img.src = url;
+}
+function aktWord(){
+  docxErzeugen([
+    {typ:'t', text:'Aktivitätsdiagramm: ' + (S.akt.titel||'')},
+    {typ:'p', text:'Ablaufbeschreibung in Schrittfolge. Die zugehörige Grafik wird als Bild eingefügt.'},
+    {typ:'h1', text:'Ablauf'},
+    ...aktZeilen(S.akt),
+    {typ:'h1', text:'Legende'},
+    {typ:'li', text:'Ausgefüllter Kreis: Startknoten'},
+    {typ:'li', text:'Abgerundetes Rechteck: Aktion'},
+    {typ:'li', text:'Raute: Entscheidung mit Bedingungen in eckigen Klammern, zweite Raute als Zusammenführung'},
+    {typ:'li', text:'Balken: Parallelisierung (Fork) und Synchronisation (Join)'},
+    {typ:'li', text:'Ring mit Punkt: Endknoten'}
+  ], 'Aktivitaetsdiagramm.docx');
 }
 
 /* ===================== NAVIGATION ===================== */
@@ -6664,7 +6989,7 @@ function renderInfo(){
       <p class="small">Projektmanagement ist Bestandteil von Teil 1 der gestreckten Abschlussprüfung sowie des Prüfungsbereichs „Planen eines Softwareproduktes" bzw. der Projektarbeit in Teil 2. Die Inhalte orientieren sich am Rahmenlehrplan, an DIN 69901 und an gängiger Prüfungspraxis. Verbindlich sind allein die Vorgaben deiner zuständigen Kammer.</p>
       <h4>Datenspeicherung</h4>
       <p class="small">Lernfortschritt und Quizergebnisse liegen ausschließlich im Local Storage deines Browsers. Es werden keine Daten übertragen.</p>
-      <button class="btn sm" onclick="if(confirm('Wirklich allen Lernfortschritt löschen?')){localStorage.removeItem('pmw_read');localStorage.removeItem('pmw_quiz');localStorage.removeItem('pmw_abl');localStorage.removeItem('pmw_pa');localStorage.removeItem('pmw_paa');localStorage.removeItem('pmw_paz');localStorage.removeItem('pmw_pas');localStorage.removeItem('pmw_lph');localStorage.removeItem('pmw_dok');S.read=[];S.quiz={};S.abl={};S.pa={};S.paa={};S.save();updateProgress();renderInfo();alert('Lernfortschritt zurückgesetzt.')}">Lernfortschritt zurücksetzen</button>
+      <button class="btn sm" onclick="if(confirm('Wirklich allen Lernfortschritt löschen?')){localStorage.removeItem('pmw_read');localStorage.removeItem('pmw_quiz');localStorage.removeItem('pmw_abl');localStorage.removeItem('pmw_pa');localStorage.removeItem('pmw_paa');localStorage.removeItem('pmw_paz');localStorage.removeItem('pmw_pas');localStorage.removeItem('pmw_lph');localStorage.removeItem('pmw_dok');localStorage.removeItem('pmw_akt');S.read=[];S.quiz={};S.abl={};S.pa={};S.paa={};S.save();updateProgress();renderInfo();alert('Lernfortschritt zurückgesetzt.')}">Lernfortschritt zurücksetzen</button>
     </div>
     <div class="card">
       <h3>Zur Startseite hinzufügen</h3>
