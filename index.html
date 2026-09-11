@@ -5605,6 +5605,151 @@ function musterWord(){
   docxErzeugen(abs, 'Perfekte-Projektdokumentation.docx');
 }
 
+/* ===================== EXPORTE DER RECHNER ===================== */
+function svgAlsSvg(svg, name){ aktDownload(new Blob([svg], {type:'image/svg+xml'}), name + '.svg'); }
+function svgAlsPng(svg, name){
+  const img = new Image();
+  const url = URL.createObjectURL(new Blob([svg], {type:'image/svg+xml'}));
+  img.onload = ()=>{
+    const c = document.createElement('canvas');
+    c.width = img.width*2; c.height = img.height*2;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#0d1620'; ctx.fillRect(0,0,c.width,c.height);
+    ctx.drawImage(img, 0, 0, c.width, c.height);
+    URL.revokeObjectURL(url);
+    c.toBlob(b => aktDownload(b, name + '.png'), 'image/png');
+  };
+  img.onerror = ()=>{ URL.revokeObjectURL(url); alert('Das PNG konnte nicht erzeugt werden. Nutze bitte den SVG-Export.'); };
+  img.src = url;
+}
+/* Ergebnis eines Rechners als Word – liest den sichtbaren Ergebnisbereich aus */
+function ergebnisWord(titel, id){
+  const el = document.getElementById(id);
+  const txt = el ? (el.innerText || el.textContent || '') : '';
+  if(!txt.trim()){ alert('Bitte zuerst berechnen lassen.'); return; }
+  const zeilen = txt.split('\n').map(z=>z.trim()).filter(Boolean);
+  docxErzeugen([
+    {typ:'t', text:titel},
+    {typ:'p', text:'Berechnung aus der PM-Werkstatt, Stand ' + new Date().toLocaleDateString('de-DE')},
+    {typ:'h1', text:'Ergebnis'},
+    ...zeilen.map(z=>({typ: /^[-•–]/.test(z) ? 'li' : 'p', text: z.replace(/^[-•–]\s*/,'')}))
+  ], titel.replace(/[^0-9A-Za-zÄÖÜäöüß -]/g,'').trim() + '.docx');
+}
+
+/* ---- Netzplan als reines SVG (exportfähig) ---- */
+function npSvgDiagramm(rows, sol, titel){
+  const lay = npLayout(sol);
+  const W = lay.breite, H = lay.hoehe + 26;
+  const pfeile = [];
+  rows.forEach(r=>{
+    String(r.v||'').split(',').map(x=>x.trim()).filter(Boolean).forEach(p=>{
+      const a = lay.pos[p], b = lay.pos[r.id]; if(!a||!b) return;
+      const k = sol.map[p].gp===0 && sol.map[r.id].gp===0;
+      const x1 = a.x + NPD.W, y1 = a.y + NPD.H/2, x2 = b.x - 7, y2 = b.y + NPD.H/2, mx = (x1+x2)/2;
+      pfeile.push(`<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" fill="none" stroke="${k?'#f5b74e':'#5b7c99'}" stroke-width="${k?2.2:1.6}" marker-end="url(#npS${k?'K':''})"/>`);
+    });
+  });
+  const knoten = rows.map(r=>{
+    const p = lay.pos[r.id], v = sol.map[r.id]; if(!p||!v) return '';
+    const k = v.gp===0, rand = k ? '#f5b74e' : '#55738f';
+    const x = p.x, y = p.y, W1 = NPD.W, oben = 22, boxY = y+25, boxH = 48, nameH = 20, untenY = y+76;
+    const zelle = (cx, cy, t, farbe) => `<text x="${cx}" y="${cy}" text-anchor="middle" fill="${farbe||'#e6edf5'}" style="font-size:11.5px;font-family:monospace">${esc(String(t))}</text>`;
+    return `<g>
+      <rect x="${x}" y="${y}" width="52" height="${oben}" rx="4" fill="#0b1520" stroke="#22384f"/>
+      <rect x="${x+W1-52}" y="${y}" width="52" height="${oben}" rx="4" fill="#0b1520" stroke="#22384f"/>
+      ${zelle(x+26, y+15, v.faz)}${zelle(x+W1-26, y+15, v.fez)}
+      <rect x="${x}" y="${boxY}" width="${W1}" height="${boxH}" rx="5" fill="#0b1520" stroke="${rand}" stroke-width="1.4"/>
+      <line x1="${x}" y1="${boxY+nameH}" x2="${x+W1}" y2="${boxY+nameH}" stroke="${rand}"/>
+      <line x1="${x+W1/3}" y1="${boxY+nameH}" x2="${x+W1/3}" y2="${boxY+boxH}" stroke="${rand}"/>
+      <line x1="${x+2*W1/3}" y1="${boxY+nameH}" x2="${x+2*W1/3}" y2="${boxY+boxH}" stroke="${rand}"/>
+      <text x="${x+W1/2}" y="${boxY+14}" text-anchor="middle" fill="${k?'#f5b74e':'#e6edf5'}" style="font-size:11px"><tspan style="font-weight:700">${esc(r.id)}</tspan> ${esc(String(r.n||'').slice(0,15))}</text>
+      ${zelle(x+W1/6, boxY+nameH+19, v.d, '#f5b74e')}
+      ${zelle(x+W1/2, boxY+nameH+19, v.gp)}
+      ${zelle(x+5*W1/6, boxY+nameH+19, v.fp)}
+      <rect x="${x}" y="${untenY}" width="52" height="${oben}" rx="4" fill="#0b1520" stroke="#22384f"/>
+      <rect x="${x+W1-52}" y="${untenY}" width="52" height="${oben}" rx="4" fill="#0b1520" stroke="#22384f"/>
+      ${zelle(x+26, untenY+15, v.saz)}${zelle(x+W1-26, untenY+15, v.sez)}
+    </g>`;
+  }).join('');
+  return svgFarbFix(`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="npS" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 9 3.5, 0 7" fill="#5b7c99"/></marker>
+      <marker id="npSK" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 9 3.5, 0 7" fill="#f5b74e"/></marker>
+    </defs>
+    <rect width="${W}" height="${H}" fill="#0d1620"/>
+    ${pfeile.join('')}${knoten}
+    <text x="10" y="${H-8}" fill="#6b8299" style="font-size:10.5px">${esc(titel||'')} · oben FAZ und FEZ, Mitte Dauer, GP und FP, unten SAZ und SEZ · gelb = kritischer Pfad</text>
+  </svg>`);
+}
+
+/* ---- Netzplan als Word ---- */
+function netzWord(rows, sol){
+  const tab = {kopf:['Vorgang','Bezeichnung','Dauer','Vorgänger','FAZ','FEZ','SAZ','SEZ','GP','FP'],
+    breiten:[800,2200,700,900,650,650,650,650,600,600],
+    zeilen: sol.order.map(id=>{ const v = sol.map[id];
+      return [id, String(v.n||''), String(v.d), (v.pre||[]).join(', ')||'–',
+        String(v.faz), String(v.fez), String(v.saz), String(v.sez), String(v.gp), String(v.fp)]; })};
+  const g = {titel:'Balkenplan', xTitel:'Zeiteinheiten', xPraefix:'', xStart:0, xMax:sol.dauer,
+    xSchritt:Math.max(1, Math.round(sol.dauer/10)), yTitel:'Vorgang', zeigePuffer:true,
+    zeilen: sol.order.map(id=>{ const v = sol.map[id];
+      return {n:`${id} ${String(v.n||'').slice(0,18)}`.trim(), s:v.faz, d:v.d, p:v.gp, ms:v.gp===0, typ:v.gp===0?'krit':'normal'}; })};
+  docxErzeugen([
+    {typ:'t', text:'Netzplan'},
+    {typ:'p', text:`Projektdauer ${sol.dauer} Zeiteinheiten. Kritischer Pfad: ${sol.krit.join(' – ')}.`},
+    {typ:'h1', text:'Vorgangsliste mit Zeitpunkten und Puffern'},
+    {typ:'tbl', tabelle:tab},
+    {typ:'p', text:'FAZ frühester Anfang, FEZ frühestes Ende, SAZ spätester Anfang, SEZ spätestes Ende, GP Gesamtpuffer, FP freier Puffer. Vorgänge mit GP = 0 liegen auf dem kritischen Pfad.'},
+    {typ:'h1', text:'Rechenweg'},
+    ...sol.order.map(id=>{ const v = sol.map[id];
+      return {typ:'li', text:`${id}: ${v.pre.length?`FAZ = max(${v.pre.map(p=>sol.map[p].fez).join('; ')}) = ${v.faz}`:'Startvorgang, FAZ = 0'} · FEZ = ${v.faz} + ${v.d} = ${v.fez} · ${v.succ.length?`SEZ = min(${v.succ.map(x=>sol.map[x].saz).join('; ')}) = ${v.sez}`:`Endvorgang, SEZ = ${sol.dauer}`} · SAZ = ${v.sez} − ${v.d} = ${v.saz} · GP = ${v.saz} − ${v.faz} = ${v.gp} · FP = ${v.fp}`}; }),
+    {typ:'h1', text:'Balkenplan'},
+    {typ:'tbl', tabelle:gtWordTabelle(g)},
+    {typ:'p', text:'Farbig hinterlegt sind die Vorgangsdauern, Punkte kennzeichnen den Gesamtpuffer. Gelb markierte Zeilen liegen auf dem kritischen Pfad.'}
+  ], 'Netzplan.docx');
+}
+
+/* ---- Nutzwertanalyse als Word ---- */
+function nwaWord(){
+  const krit = NWA.krit.map(k=>k.n), gew = NWA.krit.map(k=>k.g), alt = NWA.alt, b = NWA.b;
+  const werte = alt.map((_,j)=> krit.reduce((s,_2,i)=> s + (+gew[i]||0)/100 * (+b[i][j]||0), 0));
+  const best = werte.indexOf(Math.max(...werte));
+  const z2 = n => n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const tab = {kopf:['Kriterium','Gewicht', ...alt.flatMap(a=>[a+' Bewertung', a+' Teilnutzen'])],
+    breiten:[2400,1000, ...alt.flatMap(()=>[1200,1400])],
+    zeilen: krit.map((k,i)=>[k, gew[i]+' %', ...alt.flatMap((_,j)=>[String(b[i][j]), z2((+gew[i]||0)/100*(+b[i][j]||0))])])};
+  tab.zeilen.push(['Gesamtnutzwert','', ...alt.flatMap((_,j)=>['', z2(werte[j])])]);
+  docxErzeugen([
+    {typ:'t', text:'Nutzwertanalyse'},
+    {typ:'p', text:`Verglichen werden ${alt.length} Alternativen anhand von ${krit.length} gewichteten Kriterien. Die Gewichte ergeben in Summe ${gew.reduce((a,x)=>a+(+x||0),0)} %.`},
+    {typ:'h1', text:'Bewertungsmatrix'},
+    {typ:'tbl', tabelle:tab},
+    {typ:'h1', text:'Rechenweg'},
+    ...alt.map((a,j)=>({typ:'li', text:`${a}: ` + krit.map((k,i)=>`${b[i][j]} × ${z2((+gew[i]||0)/100)}`).join(' + ') + ` = ${z2(werte[j])}`})),
+    {typ:'h1', text:'Ergebnis'},
+    {typ:'p', text:`Empfohlen wird ${alt[best]} mit ${z2(werte[best])} Punkten.` +
+      (alt.length>1 ? ` Der Abstand zur nächstbesten Alternative beträgt ${z2(werte[best] - Math.max(...werte.filter((_,j)=>j!==best)))} Punkte.` : '')},
+    {typ:'p', text:'Die Bewertung erfolgte auf einer Skala von 1 bis 10. Kosten werden bewusst nicht in die Nutzwertanalyse einbezogen, sondern dem Nutzwert gesondert gegenübergestellt.'}
+  ], 'Nutzwertanalyse.docx');
+}
+
+/* ---- Risikomatrix als Word ---- */
+function riskWord(){
+  const stufe = v => v>=15 ? 'rot – sofort handeln' : v>=5 ? 'gelb – Maßnahmen planen' : 'grün – beobachten';
+  const tab = {kopf:['Risiko','W (1–5)','S (1–5)','W × S','Bewertung'], breiten:[3800,1100,1100,1000,2200],
+    zeilen: RSK.map(r=>[r.n, String(r.w), String(r.s), String(r.w*r.s), stufe(r.w*r.s)])};
+  docxErzeugen([
+    {typ:'t', text:'Risikobewertung'},
+    {typ:'p', text:'Bewertung nach Eintrittswahrscheinlichkeit und Schadensausmaß auf einer Skala von 1 bis 5. Die Risikokennzahl ist das Produkt beider Werte.'},
+    {typ:'h1', text:'Risikoregister'},
+    {typ:'tbl', tabelle:tab},
+    {typ:'h1', text:'Einstufung und Vorgehen'},
+    {typ:'li', text:'1 bis 4 grün: akzeptieren und beobachten, Vorsorge im Budget.'},
+    {typ:'li', text:'5 bis 12 gelb: vermindern oder übertragen, Maßnahme mit Verantwortlichem und Termin festlegen.'},
+    {typ:'li', text:'15 bis 25 rot: vermeiden oder stark vermindern, Eskalation an den Lenkungsausschuss.'},
+    {typ:'p', text:'Die vier Strategien lauten vermeiden, vermindern, übertragen und akzeptieren. Eingetretene Risiken werden als Problem in die Projektsteuerung überführt.'}
+  ], 'Risikobewertung.docx');
+}
+
 /* ===================== NAVIGATION ===================== */
 const VIEWS = [
  ['start','Start'],['lernen','Lernen'],['projekt','IHK-Projekt'],['ablauf','Ablaufplan'],['rechner','Rechner'],['quiz','Quiz'],
@@ -5798,13 +5943,13 @@ function calcNetz(){
   $('#calcBody').innerHTML = `
   <div class="card">
     <h3>Netzplan – Vorgangsknoten</h3>
-    <p class="small muted">Vorgänger als Buchstaben mit Komma trennen, z. B. <code>B,C</code>. Leer lassen für Startvorgänge.</p>
+    <p class="small muted">Vorgänger als Kürzel trennen mit Komma, Semikolon oder Leerzeichen, z. B. <code>B,C</code>. Leer lassen für Startvorgänge. Bei der Dauer sind Komma und Punkt als Dezimaltrennzeichen erlaubt.</p>
     <div class="tblwrap"><table id="npTbl">
       <tr><th>ID</th><th>Vorgang</th><th>Dauer</th><th>Vorgänger</th><th></th></tr>
       ${NP.map((r,i)=>`<tr>
         <td><input value="${r.id}" oninput="NP[${i}].id=this.value.trim().toUpperCase()" style="width:4.5ch;text-align:center;padding:.35rem .2rem"></td>
         <td><input value="${esc(r.n)}" oninput="NP[${i}].n=this.value" style="min-width:9ch"></td>
-        <td><input type="number" min="0" value="${r.d}" oninput="NP[${i}].d=+this.value" style="width:7ch;padding:.35rem .3rem"></td>
+        <td><input inputmode="decimal" value="${r.d}" oninput="NP[${i}].d=this.value" style="width:7ch;padding:.35rem .3rem;text-align:center"></td>
         <td><input value="${r.v}" oninput="NP[${i}].v=this.value.toUpperCase()" style="width:9ch;padding:.35rem .3rem"></td>
         <td><button class="btn sm ghost" onclick="NP.splice(${i},1);calcNetz()" aria-label="Zeile löschen">✕</button></td>
       </tr>`).join('')}
@@ -5817,56 +5962,37 @@ function calcNetz(){
   </div>`;
 }
 function runNetz(){
-  const rows = NP.filter(r=>r.id);
-  const map = {}; rows.forEach(r => map[r.id] = {...r, pre:r.v.split(',').map(s=>s.trim()).filter(Boolean)});
-  const ids = Object.keys(map);
-  for(const id of ids) for(const p of map[id].pre) if(!map[p])
-    return $('#npOut').innerHTML = `<div class="note warn"><b>Eingabe prüfen</b>Vorgänger „${esc(p)}" bei Vorgang ${esc(id)} existiert nicht.</div>`;
-  // topologische Sortierung
-  const order=[], seen={}, temp={};
-  let cycle=false;
-  const visit = id => {
-    if(seen[id]) return; if(temp[id]){cycle=true;return;} temp[id]=1;
-    map[id].pre.forEach(visit); temp[id]=0; seen[id]=1; order.push(id);
-  };
-  ids.forEach(visit);
-  if(cycle) return $('#npOut').innerHTML = `<div class="note warn"><b>Zyklus erkannt</b>Die Vorgänger bilden einen Kreis. Ein Netzplan muss zyklenfrei sein.</div>`;
-
-  order.forEach(id=>{ const v=map[id];
-    v.faz = v.pre.length ? Math.max(...v.pre.map(p=>map[p].fez)) : 0;
-    v.fez = v.faz + (+v.d||0);
-  });
-  const dauer = Math.max(...ids.map(i=>map[i].fez));
-  ids.forEach(i => map[i].succ = ids.filter(j => map[j].pre.includes(i)));
-  [...order].reverse().forEach(id=>{ const v=map[id];
-    v.sez = v.succ.length ? Math.min(...v.succ.map(s=>map[s].saz)) : dauer;
-    v.saz = v.sez - (+v.d||0);
-  });
-  ids.forEach(i=>{ const v=map[i];
-    v.gp = v.saz - v.faz;
-    v.fp = v.succ.length ? Math.min(...v.succ.map(s=>map[s].faz)) - v.fez : dauer - v.fez;
-  });
-  const krit = order.filter(i=>map[i].gp===0);
-  const max = dauer || 1;
+  const rows = NP.filter(r => String(r.id||'').trim());
+  const fehler = npPruefe(rows);
+  if(fehler) return $('#npOut').innerHTML = `<div class="note warn"><b>Eingabe prüfen</b>${fehler}</div>`;
   const sol = npSolve(rows);
   $('#npOut').innerHTML = `
   <div class="calcbox">
     <div class="eyebrow">Netzplan als Vorgangsknotendiagramm</div>
-    ${npDiagrammStatisch(rows, sol)}
+    <div class="npwrap">${npSvgDiagramm(rows, sol, 'Netzplan')}</div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem">
+      <button class="btn sm primary" onclick="svgAlsPng(npSvgDiagramm(NP.filter(r=>r.id), npSolve(NP.filter(r=>r.id)), 'Netzplan'), 'Netzplan')">🖼 PNG</button>
+      <button class="btn sm" onclick="svgAlsSvg(npSvgDiagramm(NP.filter(r=>r.id), npSolve(NP.filter(r=>r.id)), 'Netzplan'), 'Netzplan')">SVG</button>
+      <button class="btn sm" onclick="netzWord(NP.filter(r=>r.id), npSolve(NP.filter(r=>r.id)))">📄 Word mit Tabelle und Rechenweg</button>
+    </div>
   </div>
   <div class="calcbox">
     <div class="tblwrap"><table>
       <tr><th>Vorgang</th><th>D</th><th>FAZ</th><th>FEZ</th><th>SAZ</th><th>SEZ</th><th>GP</th><th>FP</th></tr>
-      ${order.map(i=>{const v=map[i];return `<tr${v.gp===0?' style="color:var(--amber)"':''}>
-        <td><b>${esc(v.id)}</b> ${esc(v.n)}</td><td>${v.d}</td><td>${v.faz}</td><td>${v.fez}</td>
+      ${sol.order.map(i=>{const v=sol.map[i];return `<tr${v.gp===0?' style="color:var(--amber)"':''}>
+        <td><b>${esc(v.id)}</b> ${esc(v.n||'')}</td><td>${v.d}</td><td>${v.faz}</td><td>${v.fez}</td>
         <td>${v.saz}</td><td>${v.sez}</td><td><b>${v.gp}</b></td><td>${v.fp}</td></tr>`}).join('')}
     </table></div>
-    <p class="result" style="margin:.7rem 0 .3rem">Projektdauer: <b>${dauer}</b> Zeiteinheiten<br>
-    Kritischer Pfad: <b>${krit.join(' → ')||'–'}</b></p>
+    <p class="result" style="margin:.7rem 0 .3rem">Projektdauer: <b>${sol.dauer}</b> Zeiteinheiten<br>
+    Kritischer Pfad: <b>${sol.krit.join(' → ')||'–'}</b></p>
   </div>
   <div class="calcbox">
     <div class="eyebrow">Gantt-Diagramm (Balkenplan)</div>
     ${npGantt(rows, sol)}
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem">
+      <button class="btn sm" onclick="svgAlsPng(svgFarbFix(npGantt(NP.filter(r=>r.id), npSolve(NP.filter(r=>r.id))).replace(/^[\s\S]*?(<svg)/,'$1').replace(/<\/svg>[\s\S]*$/,'</svg>')), 'Netzplan-Gantt')">🖼 Gantt als PNG</button>
+      <button class="btn sm ghost" onclick="S.gt.zeilen=npSolve(NP.filter(r=>r.id)).order.map(id=>{const v=npSolve(NP.filter(r=>r.id)).map[id];return {n:id,s:v.faz,d:v.d,p:v.gp,ms:v.gp===0,typ:v.gp===0?'krit':'normal'}});S.gt.xStart=0;S.gt.xMax=npSolve(NP.filter(r=>r.id)).dauer;S.gt.xTitel='Zeiteinheiten';S.gt.yTitel='Vorgang';gtSave();go('projekt');paTab='gantt';renderProjekt()">In der Gantt-Werkstatt öffnen</button>
+    </div>
   </div>`;
 }
 
@@ -5883,6 +6009,7 @@ function calcPert(){
     </div>
     <div class="field"><label class="fl">Stundensatz in € (optional)</label><input type="number" id="pS" value="75" step="1"></div>
     <button class="btn primary" onclick="runPert()">Berechnen</button>
+    <button class="btn" onclick="ergebnisWord('Dreipunktschätzung','pertOut')">📄 Word</button>
     <div id="pertOut"></div>
   </div>`;
 }
@@ -5944,6 +6071,9 @@ function runNwa(){
     </table></div>
     <p class="result" style="margin:.6rem 0 0">Empfehlung: <b>${esc(NWA.alt[best])}</b> mit ${f(werte[best])} Punkten.</p>
     <p class="small muted" style="margin:.4rem 0 0">Liegt der Abstand unter etwa 5 %, sollte die Entscheidung über eine Sensitivitätsbetrachtung abgesichert werden.</p>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem">
+      <button class="btn sm primary" onclick="nwaWord()">📄 Als Word mit Rechenweg</button>
+    </div>
   </div>`
     + nwaRechenweg(NWA.krit.map(k=>k.n), NWA.krit.map(k=>k.g), NWA.b, NWA.alt, werte)
     + nwaDiagramm(NWA.krit.map(k=>k.n), NWA.krit.map(k=>k.g), NWA.b, NWA.alt, werte);
@@ -6102,6 +6232,7 @@ function calcWirt(){
       <div class="field"><label class="fl">Laufende Zusatzkosten pro Jahr in €</label><input type="number" id="wL" value="0"></div>
     </div>
     <button class="btn primary" onclick="runWirt()">Berechnen</button>
+    <button class="btn" onclick="ergebnisWord('Amortisation und ROI','wirtOut')">📄 Word</button>
     <div id="wirtOut"></div>
   </div>
   <div class="card">
@@ -6113,6 +6244,7 @@ function calcWirt(){
     </div>
     <div class="field"><label class="fl">Gesamtbudget BAC in € (optional)</label><input type="number" id="eB" value="120000"></div>
     <button class="btn primary" onclick="runEv()">Kennzahlen berechnen</button>
+    <button class="btn" onclick="ergebnisWord('Earned Value','evOut')">📄 Word</button>
     <div id="evOut"></div>
   </div>`;
 }
@@ -6164,6 +6296,7 @@ function calcKalk(){
       <div class="field"><label class="fl">Umsatzsteuer %</label><input type="number" id="kUS" value="19" step="0.1"></div>
     </div>
     <button class="btn primary" onclick="runKalk()">Angebotspreis berechnen</button>
+    <button class="btn" onclick="ergebnisWord('Zuschlagskalkulation','kalkOut')">📄 Word</button>
     <div id="kalkOut"></div>
   </div>
   <div class="card">
@@ -6177,6 +6310,7 @@ function calcKalk(){
       <div class="field"><label class="fl">Verrechenbarer Anteil %</label><input type="number" id="sV" value="75" step="1"></div>
     </div>
     <button class="btn primary" onclick="runSatz()">Stundensatz berechnen</button>
+    <button class="btn" onclick="ergebnisWord('Kalkulatorischer Stundensatz','satzOut')">📄 Word</button>
     <div id="satzOut"></div>
   </div>`;
 }
@@ -6237,6 +6371,7 @@ function calcKap(){
       <div class="field"><label class="fl">Anzahl Wochen</label><input type="number" id="cN" value="1" step="0.5"></div>
     </div>
     <button class="btn primary" onclick="runKap()">Auslastung berechnen</button>
+    <button class="btn" onclick="ergebnisWord('Kapazitätsabgleich','kapOut')">📄 Word</button>
     <div id="kapOut"></div>
   </div>
   <div class="card">
@@ -6250,6 +6385,7 @@ function calcKap(){
       <div class="field"><label class="fl">Schulungstage</label><input type="number" id="nS" value="5"></div>
     </div>
     <button class="btn primary" onclick="runNetto()">Nettokapazität berechnen</button>
+    <button class="btn" onclick="ergebnisWord('Nettokapazität','nettoOut')">📄 Word</button>
     <div id="nettoOut"></div>
   </div>`;
 }
@@ -6303,9 +6439,38 @@ const NPU = [
  rows:[{id:'A',n:'Ist-Analyse',d:2,v:''},{id:'B',n:'Soll-Konzept',d:4,v:'A'},{id:'C',n:'Beschaffung neuer Server',d:3,v:'B'},{id:'D',n:'Installation strukturierter Verkabelung',d:8,v:'B'},{id:'E',n:'Datensicherung',d:2,v:'B'},{id:'F',n:'Dokumentation des Netzwerkes',d:5,v:'B'},{id:'G',n:'Installation neuer Server',d:4,v:'C,D'},{id:'H',n:'Abbau alter Infrastruktur',d:1,v:'E'},{id:'I',n:'Einrichtung Clients',d:3,v:'G,H'},{id:'J',n:'Funktionstest',d:1,v:'I'},{id:'K',n:'Übergabe und Einweisung',d:2,v:'F,J'}]}
 ];
 
+/* Zahl mit Komma oder Punkt einlesen */
+function npZahl(v){ const n = parseFloat(String(v).replace(',','.').replace(/[^0-9.\-]/g,'')); return isFinite(n) ? n : 0; }
+/* Vorgängerliste tolerant trennen: Komma, Semikolon, Schrägstrich, Leerzeichen */
+function npTrenne(v){ return String(v||'').toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean); }
+/* Eingaben prüfen – liefert eine Fehlermeldung oder null */
+function npPruefe(rows){
+  if(!rows.length) return 'Es ist kein Vorgang erfasst.';
+  const ids = rows.map(r => String(r.id||'').trim().toUpperCase());
+  if(ids.some(x => !x)) return 'Mindestens eine Zeile hat kein Vorgangskürzel. Bitte ergänzen oder die Zeile löschen.';
+  const dop = [...new Set(ids.filter((v,i)=>ids.indexOf(v)!==i))];
+  if(dop.length) return `Das Kürzel <b>${esc(dop.join(', '))}</b> kommt mehrfach vor. Jeder Vorgang braucht ein eindeutiges Kürzel, sonst wird eine Zeile stillschweigend überschrieben.`;
+  for(const r of rows){
+    for(const p of npTrenne(r.v)){
+      if(p === String(r.id).toUpperCase()) return `Vorgang <b>${esc(r.id)}</b> ist als eigener Vorgänger eingetragen. Das ergibt einen Kreis.`;
+      if(!ids.includes(p)) return `Vorgänger <b>${esc(p)}</b> bei Vorgang <b>${esc(r.id)}</b> existiert nicht. Mehrere Vorgänger bitte mit Komma trennen, zum Beispiel <code>B,C</code>.`;
+    }
+  }
+  const offen = new Set(ids), pre = {};
+  rows.forEach(r => pre[String(r.id).toUpperCase()] = npTrenne(r.v));
+  let bewegt = true;
+  while(offen.size && bewegt){
+    bewegt = false;
+    for(const id of [...offen]) if(pre[id].every(p => !offen.has(p))){ offen.delete(id); bewegt = true; }
+  }
+  if(offen.size) return `Die Vorgänge <b>${esc([...offen].join(', '))}</b> bilden einen Kreis. Ein Netzplan muss zyklenfrei sein.`;
+  if(rows.every(r => npZahl(r.d) === 0)) return 'Alle Dauern sind null. Bitte mindestens eine Dauer eintragen.';
+  return null;
+}
+
 /* Berechnung eines Netzplans – liefert Kennzahlen je Vorgang */
 function npSolve(rows){
-  const map={}; rows.forEach(r=>map[r.id]={...r, pre:String(r.v||'').split(',').map(x=>x.trim()).filter(Boolean)});
+  const map={}; rows.forEach(r=>map[String(r.id).toUpperCase()]={...r, id:String(r.id).toUpperCase(), d:npZahl(r.d), pre:npTrenne(r.v)});
   const ids=Object.keys(map), order=[], seen={};
   const visit=id=>{ if(seen[id])return; seen[id]=1; map[id].pre.forEach(visit); if(!order.includes(id))order.push(id); };
   ids.forEach(id=>{ if(!seen[id]) visit(id); });
@@ -6319,12 +6484,12 @@ function npSolve(rows){
   }
   order.forEach(id=>{ const v=map[id];
     v.faz = v.pre.length ? Math.max(...v.pre.map(p=>map[p].fez)) : 0;
-    v.fez = v.faz + (+v.d||0); });
+    v.fez = v.faz + v.d; });
   const dauer = Math.max(...ids.map(i=>map[i].fez));
   ids.forEach(i=>map[i].succ = ids.filter(j=>map[j].pre.includes(i)));
   [...order].reverse().forEach(id=>{ const v=map[id];
     v.sez = v.succ.length ? Math.min(...v.succ.map(s=>map[s].saz)) : dauer;
-    v.saz = v.sez - (+v.d||0); });
+    v.saz = v.sez - v.d; });
   ids.forEach(i=>{ const v=map[i];
     v.gp = v.saz - v.faz;
     v.fp = v.succ.length ? Math.min(...v.succ.map(s=>map[s].faz)) - v.fez : dauer - v.fez; });
@@ -6510,6 +6675,10 @@ function calcNpu(){
         </tr>`}).join('')}
       </table></div>
       <div style="margin-top:.9rem"><div class="eyebrow">Gantt-Diagramm</div>${npGantt(st.rows, sol)}</div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem">
+        <button class="btn sm primary" onclick="svgAlsPng(npSvgDiagramm(NPU_ST.rows, npSolve(NPU_ST.rows), NPU_ST.titel), 'Netzplan-Uebung')">🖼 Lösung als PNG</button>
+        <button class="btn sm" onclick="netzWord(NPU_ST.rows, npSolve(NPU_ST.rows))">📄 Lösung als Word</button>
+      </div>
     </div>`:''}
   </div>`;
 }
@@ -7054,7 +7223,10 @@ function calcRisk(){
         <td><button class="btn sm ghost" onclick="RSK.splice(${i},1);calcRisk()">✕</button></td>
       </tr>`}).join('')}
     </table></div>
-    <button class="btn sm" style="margin-top:.6rem" onclick="RSK.push({n:'Neues Risiko',w:3,s:3});calcRisk()">+ Risiko</button>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem">
+      <button class="btn sm" onclick="RSK.push({n:'Neues Risiko',w:3,s:3});calcRisk()">+ Risiko</button>
+      <button class="btn sm primary" onclick="riskWord()">📄 Risikoregister als Word</button>
+    </div>
     <div class="note" style="margin-top:1rem"><b>Strategie nach Bewertung</b>
     Rot (15–25): vermeiden oder stark vermindern, Eskalation an den Lenkungsausschuss. Gelb (5–12): vermindern oder übertragen, Maßnahme mit Verantwortlichem und Termin festlegen. Grün (1–4): akzeptieren und beobachten.</div>
   </div>`;
