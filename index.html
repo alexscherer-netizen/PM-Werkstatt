@@ -268,6 +268,32 @@ footer{border-top:1px solid var(--line);margin-top:2.5rem;padding-top:1.4rem;col
 .npn-box.krit .npn-name{border-bottom-color:var(--amber);color:var(--amber)}
 .npn-box.krit .npn-mid>*{border-right-color:var(--amber)}
 .npn-puf{color:var(--ink-dim)!important}
+
+/* ---------- Druckansicht ---------- */
+@media print{
+  :root{--bg:#fff;--panel:#fff;--panel-2:#fff;--line:#c3ccd6;--ink:#111;--ink-dim:#333;--ink-faint:#555;--teal:#00675b;--amber:#8a5a00;--violet:#5b3fb5;--red:#a11;--ok:#136c2e;--bg-deep:#fff}
+  body{background:#fff!important;background-image:none!important;color:#111;font-size:10.5pt}
+  header,nav,footer,button,.btn,input,select,textarea{display:none!important}
+  main{max-width:none;padding:0}
+  .view{display:none!important}
+  .view.on{display:block!important}
+  .card,.reader,.calcbox{border:1px solid #c3ccd6;background:#fff;break-inside:avoid;page-break-inside:avoid}
+  h2,h3,h4{color:#111;break-after:avoid;page-break-after:avoid}
+  h4{color:#00675b}
+  a{color:#111;text-decoration:underline}
+  table{font-size:9.5pt}
+  .note{background:#f4f7fa!important;border-left:3px solid #00675b}
+  .note.warn{border-left-color:#8a5a00}
+  .note.exam{border-left-color:#5b3fb5}
+  .pill{color:#333;background:#eef2f6;border-color:#c3ccd6}
+  .bar{background:#eef2f6}
+  .bar i{background:#00675b}
+  .npwrap{overflow:visible}
+  .npwrap svg{max-width:100%;height:auto}
+  .chap{border:1px solid #c3ccd6;background:#fff}
+  .flip{display:none}
+  @page{margin:18mm 16mm}
+}
 </style>
 </head>
 <body>
@@ -296,6 +322,7 @@ footer{border-top:1px solid var(--line);margin-top:2.5rem;padding-top:1.4rem;col
   <section class="view" id="v-quiz"></section>
   <section class="view" id="v-karten"></section>
   <section class="view" id="v-pruefung"></section>
+  <section class="view" id="v-suche"></section>
   <section class="view" id="v-projekt"></section>
   <section class="view" id="v-ablauf"></section>
   <section class="view" id="v-faelle"></section>
@@ -4363,6 +4390,9 @@ function docxTabelle(tb){
 }
 function docxAbsatz(a){
   if(a.typ === 'tbl') return docxTabelle(a.tabelle);
+  if(a.typ === 'seitenumbruch') return '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+  if(a.typ === 'toc') return '<w:p><w:pPr><w:tabs><w:tab w:val="right" w:leader="dot" w:pos="9072"/></w:tabs></w:pPr>' +
+    docxFeld('TOC \\o "1-2" \\h \\z \\u', 'Rechtsklick auf dieses Feld und „Felder aktualisieren" wählen, um das Verzeichnis zu erzeugen.') + '</w:p>';
   const stil = {t:'Title', h1:'Heading1', h2:'Heading2'}[a.typ];
   const pPr = `<w:pPr>${stil?`<w:pStyle w:val="${stil}"/>`:''}${a.typ==='li'?'<w:ind w:left="360" w:hanging="180"/>':''}${a.typ==='mono'?'<w:spacing w:line="240" w:lineRule="auto"/>':''}</w:pPr>`;
   const rPr = a.typ==='mono' ? '<w:rPr><w:rFonts w:ascii="Consolas" w:hAnsi="Consolas"/><w:sz w:val="18"/></w:rPr>' : '';
@@ -4370,11 +4400,36 @@ function docxAbsatz(a){
   return `<w:p>${pPr}<w:r>${rPr}<w:t xml:space="preserve">${xEsc(text)}</w:t></w:r></w:p>`;
 }
 
-function docxErzeugen(absaetze, dateiname){
-  const body = absaetze.map(docxAbsatz).join('') +
-    '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1418" w:header="709" w:footer="709"/></w:sectPr>';
+/* Feldbefehl, etwa Seitenzahl oder Inhaltsverzeichnis */
+function docxFeld(befehl, platzhalter){
+  return `<w:r><w:fldChar w:fldCharType="begin"/></w:r>` +
+    `<w:r><w:instrText xml:space="preserve"> ${befehl} </w:instrText></w:r>` +
+    `<w:r><w:fldChar w:fldCharType="separate"/></w:r>` +
+    `<w:r><w:t>${xEsc(platzhalter||'')}</w:t></w:r>` +
+    `<w:r><w:fldChar w:fldCharType="end"/></w:r>`;
+}
+function docxErzeugen(absaetze, dateiname, opt){
+  opt = opt || {};
+  const titel = opt.titel || (absaetze.find(a=>a.typ==='t')||{}).text || dateiname.replace(/\.docx$/,'');
+  /* Inhaltsverzeichnis vor dem ersten Inhalt einfügen */
+  let liste = absaetze;
+  if(opt.inhaltsverzeichnis){
+    const erste = absaetze.findIndex(a=>a.typ==='h1');
+    const toc = [
+      {typ:'h1', text:'Inhaltsverzeichnis'},
+      {typ:'toc'},
+      {typ:'seitenumbruch'}
+    ];
+    liste = erste > 0 ? [...absaetze.slice(0,erste), ...toc, ...absaetze.slice(erste)] : [...absaetze, ...toc];
+  }
+  const body = liste.map(docxAbsatz).join('') +
+    '<w:sectPr>' +
+    (opt.kopfzeile !== false ? '<w:headerReference w:type="default" r:id="rIdH"/>' : '') +
+    '<w:footerReference w:type="default" r:id="rIdF"/>' +
+    '<w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1417" w:right="1134" w:bottom="1417" w:left="1418" w:header="709" w:footer="709"/></w:sectPr>';
   const kopf = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
   const nsW = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
+  const nsR = 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
   const dateien = [
     {name:'[Content_Types].xml', inhalt: kopf +
       '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
@@ -4382,6 +4437,9 @@ function docxErzeugen(absaetze, dateiname){
       '<Default Extension="xml" ContentType="application/xml"/>' +
       '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
       '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>' +
+      '<Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>' +
+      '<Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>' +
+      '<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>' +
       '</Types>'},
     {name:'_rels/.rels', inhalt: kopf +
       '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
@@ -4390,7 +4448,26 @@ function docxErzeugen(absaetze, dateiname){
     {name:'word/_rels/document.xml.rels', inhalt: kopf +
       '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
       '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+      '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/>' +
+      '<Relationship Id="rIdH" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/>' +
+      '<Relationship Id="rIdF" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>' +
       '</Relationships>'},
+    {name:'word/settings.xml', inhalt: kopf + `<w:settings ${nsW}><w:updateFields w:val="true"/></w:settings>`},
+    {name:'word/header1.xml', inhalt: kopf + `<w:hdr ${nsW}>` +
+      '<w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="4" w:space="2" w:color="9AA7B4"/></w:pBdr>' +
+      '<w:tabs><w:tab w:val="right" w:pos="9072"/></w:tabs><w:spacing w:after="0"/></w:pPr>' +
+      `<w:r><w:rPr><w:sz w:val="18"/><w:color w:val="555555"/></w:rPr><w:t xml:space="preserve">${xEsc(titel)}</w:t></w:r>` +
+      `<w:r><w:rPr><w:sz w:val="18"/><w:color w:val="555555"/></w:rPr><w:tab/><w:t>${xEsc(opt.kopfRechts || new Date().toLocaleDateString('de-DE'))}</w:t></w:r>` +
+      '</w:p></w:hdr>'},
+    {name:'word/footer1.xml', inhalt: kopf + `<w:ftr ${nsW}>` +
+      '<w:p><w:pPr><w:pBdr><w:top w:val="single" w:sz="4" w:space="2" w:color="9AA7B4"/></w:pBdr>' +
+      '<w:tabs><w:tab w:val="center" w:pos="4536"/><w:tab w:val="right" w:pos="9072"/></w:tabs><w:spacing w:after="0"/></w:pPr>' +
+      `<w:r><w:rPr><w:sz w:val="18"/><w:color w:val="555555"/></w:rPr><w:t xml:space="preserve">${xEsc(opt.fussLinks || '')}</w:t></w:r>` +
+      '<w:r><w:rPr><w:sz w:val="18"/><w:color w:val="555555"/></w:rPr><w:tab/><w:t xml:space="preserve">Seite </w:t></w:r>' +
+      docxFeld('PAGE', '1') +
+      '<w:r><w:rPr><w:sz w:val="18"/><w:color w:val="555555"/></w:rPr><w:t xml:space="preserve"> von </w:t></w:r>' +
+      docxFeld('NUMPAGES', '1') +
+      '</w:p></w:ftr>'},
     /* Schriftgrad 11 (sz 22 Halbpunkte) und 1,3-facher Zeilenabstand (line 312) wie vom Leitfaden gefordert */
     {name:'word/styles.xml', inhalt: kopf + `<w:styles ${nsW}>` +
       '<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="22"/></w:rPr></w:rPrDefault>' +
@@ -4403,7 +4480,7 @@ function docxErzeugen(absaetze, dateiname){
       '<w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:basedOn w:val="Normal"/>' +
       '<w:pPr><w:outlineLvl w:val="1"/><w:spacing w:before="280" w:after="120"/></w:pPr><w:rPr><w:b/><w:sz w:val="26"/></w:rPr></w:style>' +
       '</w:styles>'},
-    {name:'word/document.xml', inhalt: kopf + `<w:document ${nsW}><w:body>${body}</w:body></w:document>`}
+    {name:'word/document.xml', inhalt: kopf + `<w:document ${nsW} ${nsR}><w:body>${body}</w:body></w:document>`}
   ];
   const blob = zipStore(dateien);
   const url = URL.createObjectURL(blob);
@@ -4430,7 +4507,7 @@ function paaWord(){
       txt.forEach(z => abs.push({typ: /^[-•–]\s|^alternative\s*\d|^\d\./i.test(z.trim()) ? 'li' : 'p', text: z.trim().replace(/^[-•–]\s*/,'')}));
     }
   });
-  docxErzeugen(abs, 'Projektantrag.docx');
+  docxErzeugen(abs, 'Projektantrag.docx', {fussLinks:'Projektantrag'});
 }
 
 /* ---- Word-Vorlage für die Projektdokumentation ---- */
@@ -4452,7 +4529,7 @@ function paDokuWord(){
   abs.push({typ:'h1', text:'Seitenbudget (Planung, vor der Abgabe löschen)'});
   PAS.forEach(p => abs.push({typ:'li', text:`${p.k}: ${String(p.s).replace('.',',')} Seiten`}));
   abs.push({typ:'p', text:`Summe: ${String(PAS.reduce((a,p)=>a+(+p.s||0),0)).replace('.',',')} von 15 Seiten.`});
-  docxErzeugen(abs, 'Projektdokumentation-Vorlage.docx');
+  docxErzeugen(abs, 'Projektdokumentation-Vorlage.docx', {inhaltsverzeichnis:true, fussLinks:'Vorlage'});
 }
 
 /* ===================== LASTEN- UND PFLICHTENHEFT ===================== */
@@ -4597,7 +4674,7 @@ function lphWord(){
   abs.push({typ:'tbl', tabelle:{kopf, breiten, zeilen}});
   const fkt = L.anf.filter(a=>a.typ==='funktional').length;
   abs.push({typ:'p', text:`Erfasst sind ${L.anf.length} Anforderungen, davon ${fkt} funktional und ${L.anf.length-fkt} nichtfunktional.`});
-  docxErzeugen(abs, titel + '.docx');
+  docxErzeugen(abs, titel + '.docx', {inhaltsverzeichnis:true, fussLinks:(S.lph.kopf.projekt||'')});
 }
 
 /* ===================== PROJEKTDOKUMENTATION ===================== */
@@ -4686,7 +4763,7 @@ function dokWord(){
       abs.push({typ:'p', text:'Balkenplan der Projektphasen über die Bearbeitungszeit. Türkis: Projektphasen, violett: Dokumentation.'});
     }
   });
-  docxErzeugen(abs, 'Projektdokumentation.docx');
+  docxErzeugen(abs, 'Projektdokumentation.docx', {inhaltsverzeichnis:true, fussLinks:'Projektdokumentation'});
 }
 
 /* ===================== ZEITPLAN ALS GANTT ===================== */
@@ -5602,7 +5679,7 @@ function musterWord(){
     zeilen: MUSTER_RUBRIK.map(([k,d],i)=>[k, d, S.rub[i]===undefined ? '' : String(S.rub[i])])}});
   const punkte = MUSTER_RUBRIK.reduce((a,_,i)=>a+(S.rub[i]===undefined?0:+S.rub[i]),0);
   abs.push({typ:'p', text:`Erreicht: ${punkte} von ${MUSTER_RUBRIK.length*3} Punkten (${Math.round(punkte/(MUSTER_RUBRIK.length*3)*100)} %).`});
-  docxErzeugen(abs, 'Perfekte-Projektdokumentation.docx');
+  docxErzeugen(abs, 'Perfekte-Projektdokumentation.docx', {inhaltsverzeichnis:true});
 }
 
 /* ===================== EXPORTE DER RECHNER ===================== */
@@ -5642,9 +5719,9 @@ function npSvgDiagramm(rows, sol, titel){
   const W = lay.breite, H = lay.hoehe + 26;
   const pfeile = [];
   rows.forEach(r=>{
-    String(r.v||'').split(',').map(x=>x.trim()).filter(Boolean).forEach(p=>{
-      const a = lay.pos[p], b = lay.pos[r.id]; if(!a||!b) return;
-      const k = sol.map[p].gp===0 && sol.map[r.id].gp===0;
+    npVorg(r.v).forEach(vx=>{ const p = vx.id;
+      const a = lay.pos[p], b = lay.pos[String(r.id).toUpperCase()]; if(!a||!b||!sol.map[p]) return;
+      const k = sol.map[p].gp===0 && sol.map[String(r.id).toUpperCase()].gp===0;
       const x1 = a.x + NPD.W, y1 = a.y + NPD.H/2, x2 = b.x - 7, y2 = b.y + NPD.H/2, mx = (x1+x2)/2;
       pfeile.push(`<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" fill="none" stroke="${k?'#f5b74e':'#5b7c99'}" stroke-width="${k?2.2:1.6}" marker-end="url(#npS${k?'K':''})"/>`);
     });
@@ -5750,9 +5827,194 @@ function riskWord(){
   ], 'Risikobewertung.docx');
 }
 
+/* ===================== DATENSICHERUNG ===================== */
+const PMW_KEYS = ['pmw_read','pmw_quiz','pmw_abl','pmw_pa','pmw_paa','pmw_paz','pmw_pas','pmw_lph','pmw_dok','pmw_akt','pmw_gt','pmw_rub','pmw_box','pmw_stat'];
+function sicherungErstellen(){
+  const daten = {app:'PM-Werkstatt', version:1, stand:new Date().toISOString(), inhalt:{}};
+  PMW_KEYS.forEach(k=>{ const v = localStorage.getItem(k); if(v!==null) daten.inhalt[k] = v; });
+  const name = 'PM-Werkstatt-Sicherung-' + new Date().toISOString().slice(0,10) + '.json';
+  aktDownload(new Blob([JSON.stringify(daten, null, 2)], {type:'application/json'}), name);
+}
+function sicherungLaden(datei){
+  const leser = new FileReader();
+  leser.onload = e => {
+    try{
+      const d = JSON.parse(e.target.result);
+      if(!d || d.app !== 'PM-Werkstatt' || !d.inhalt) throw new Error('Kein gültiger Sicherungsstand dieser App.');
+      const anzahl = Object.keys(d.inhalt).length;
+      if(!confirm(`Sicherung vom ${new Date(d.stand).toLocaleString('de-DE')} mit ${anzahl} Datenbereichen einspielen?\n\nAlle aktuellen Eingaben und Lernstände werden dabei überschrieben.`)) return;
+      PMW_KEYS.forEach(k=>localStorage.removeItem(k));
+      Object.entries(d.inhalt).forEach(([k,v])=>{ if(PMW_KEYS.includes(k)) localStorage.setItem(k, v); });
+      alert('Sicherung eingespielt. Die App wird neu geladen.');
+      location.reload();
+    }catch(err){ alert('Die Datei konnte nicht gelesen werden: ' + err.message); }
+  };
+  leser.readAsText(datei);
+}
+function sicherungGroesse(){
+  let n = 0; PMW_KEYS.forEach(k=>{ const v = localStorage.getItem(k); if(v) n += v.length; });
+  return n < 1024 ? n + ' Zeichen' : (n/1024).toLocaleString('de-DE',{maximumFractionDigits:1}) + ' KB';
+}
+function sicherungKarte(){
+  const belegt = PMW_KEYS.filter(k=>localStorage.getItem(k)!==null);
+  const namen = {pmw_read:'gelesene Kapitel', pmw_quiz:'Quizergebnisse', pmw_abl:'Ablauf-Checkliste', pmw_pa:'Projekt-Checklisten',
+    pmw_paa:'Antragstexte', pmw_paz:'Zeitplan', pmw_pas:'Seitenbudget', pmw_lph:'Lasten-/Pflichtenheft',
+    pmw_dok:'Projektdokumentation', pmw_akt:'Aktivitätsdiagramm', pmw_gt:'Gantt-Diagramm', pmw_rub:'Bewertungsbogen',
+    pmw_box:'Leitner-Boxen', pmw_stat:'Lernstatistik'};
+  return `
+  <div class="card">
+    <h3>Sicherung und Übertragung</h3>
+    <p class="small muted">Alle Eingaben liegen ausschließlich im Speicher dieses Browsers. Wer die Browserdaten löscht, ein anderes Gerät nutzt oder im privaten Fenster arbeitet, verliert sie. Sichere deinen Stand deshalb regelmäßig als Datei – damit lässt er sich auch auf ein anderes Gerät übertragen.</p>
+    <p class="small" style="margin:.6rem 0"><b>Aktuell gespeichert:</b> ${belegt.length ? belegt.map(k=>namen[k]||k).join(' · ') : 'noch nichts'} <span class="muted">(${sicherungGroesse()})</span></p>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <button class="btn primary" onclick="sicherungErstellen()">💾 Sicherung herunterladen</button>
+      <label class="btn" style="cursor:pointer">📂 Sicherung einspielen
+        <input type="file" accept="application/json,.json" style="display:none"
+          onchange="if(this.files[0]) sicherungLaden(this.files[0]); this.value=''"></label>
+    </div>
+    <p class="small muted" style="margin:.7rem 0 0">Die Datei enthält deine Projekttexte im Klartext. Leg sie dorthin, wo auch deine übrigen Projektunterlagen liegen.</p>
+  </div>`;
+}
+
+/* ===================== GLOBALE SUCHE ===================== */
+function sucheAlles(begriff){
+  const t = String(begriff||'').trim().toLowerCase();
+  if(t.length < 2) return [];
+  const treffer = [];
+  const roh = h => String(h).replace(/<[^>]+>/g,' ').replace(/\s+/g,' ');
+  const ausschnitt = (text, wo) => {
+    const i = text.toLowerCase().indexOf(wo);
+    if(i < 0) return text.slice(0,120);
+    return (i>50?'… ':'') + text.slice(Math.max(0,i-50), i+110).trim() + ' …';
+  };
+  CH.forEach((c,i)=>{ const txt = c.t + ' ' + c.sub + ' ' + roh(c.html);
+    if(txt.toLowerCase().includes(t)) treffer.push({typ:'Kapitel', titel:`${i+1}. ${c.t}`, text:ausschnitt(txt,t), aktion:`openChapter(${i})`}); });
+  FS.forEach((f,i)=>{ const txt = f.t + ' ' + f.sub + ' ' + roh(f.html);
+    if(txt.toLowerCase().includes(t)) treffer.push({typ:'Fallstudie', titel:f.t, text:ausschnitt(txt,t), aktion:`openFall(${i})`}); });
+  ABL.forEach((p,i)=>{ const txt = p.p + ' ' + p.ziel + ' ' + p.schritte.map(s=>s[0]+' '+s[1]).join(' ') + ' ' + p.fehler.join(' ');
+    if(txt.toLowerCase().includes(t)) treffer.push({typ:'Ablaufplan', titel:`Phase ${i+1}: ${p.p}`, text:ausschnitt(txt,t), aktion:`ablOffen=${i};go('ablauf')`}); });
+  GL.forEach(([b,d])=>{ if((b+' '+d).toLowerCase().includes(t))
+    treffer.push({typ:'Glossar', titel:b, text:d, aktion:`go('glossar');setTimeout(()=>{const e=document.getElementById('glS');if(e){e.value=${JSON.stringify(b)};drawGl(e.value)}},60)`}); });
+  FML.forEach(g=>g.items.forEach(([n,f])=>{ if((n+' '+f+' '+g.g).toLowerCase().includes(t))
+    treffer.push({typ:'Formel', titel:n, text:f, aktion:`go('formeln');setTimeout(()=>{const e=document.getElementById('fmS');if(e){e.value=${JSON.stringify(n)};drawFml(e.value)}},60)`}); }));
+  Q.forEach((q,i)=>{ if((q.q + ' ' + q.e).toLowerCase().includes(t))
+    treffer.push({typ:'Quizfrage', titel:roh(q.q).slice(0,90), text:q.e, aktion:`startQuiz('${q.c}')`}); });
+  K.forEach(k=>{ if((k.f+' '+k.b).toLowerCase().includes(t))
+    treffer.push({typ:'Karteikarte', titel:k.f, text:k.b, aktion:`filterKarten('${k.c}');go('karten')`}); });
+  OA.forEach((o,i)=>{ if((o.t+' '+roh(o.a)+' '+roh(o.l)).toLowerCase().includes(t))
+    treffer.push({typ:'Übungsaufgabe', titel:o.t, text:ausschnitt(roh(o.a),t), aktion:`go('pruefung')`}); });
+  MUSTER_ABSCHNITTE.forEach((m,i)=>{ const txt = m.t+' '+m.zweck+' '+m.inhalt.join(' ')+' '+m.gut.join(' ')+' '+m.fehler.join(' ');
+    if(txt.toLowerCase().includes(t)) treffer.push({typ:'Perfekte Doku', titel:m.t, text:ausschnitt(txt,t), aktion:`musterOffen=${i};go('projekt');paTab='muster';renderProjekt()`}); });
+  return treffer;
+}
+let sucheBegriff = '';
+function renderSuche(){
+  const tr = sucheAlles(sucheBegriff);
+  const gruppen = [...new Set(tr.map(x=>x.typ))];
+  $('#v-suche').innerHTML = `
+    <h2>Suche</h2>
+    <p class="muted small">Durchsucht Kapitel, Fallstudien, Ablaufplan, Glossar, Formeln, Quizfragen, Karteikarten, Übungsaufgaben und den Doku-Leitfaden.</p>
+    <div class="field" style="max-width:520px;margin-top:.9rem">
+      <input id="suS" placeholder="Suchbegriff, mindestens zwei Zeichen …" value="${esc(sucheBegriff)}"
+        oninput="sucheBegriff=this.value;renderSuche();const e=document.getElementById('suS');e.focus();e.setSelectionRange(e.value.length,e.value.length)">
+    </div>
+    ${sucheBegriff.trim().length < 2 ? `<p class="small muted">Beispiele: <code>Puffer</code>, <code>Skonto</code>, <code>Abnahme</code>, <code>Schutzbedarf</code>, <code>Velocity</code>.</p>`
+      : tr.length === 0 ? `<div class="note warn"><b>Kein Treffer</b>Für „${esc(sucheBegriff)}" wurde nichts gefunden. Versuch es mit einem kürzeren oder anderen Wort.</div>`
+      : `<p class="small muted"><b>${tr.length}</b> Treffer in ${gruppen.length} Bereichen</p>
+        ${gruppen.map(g=>`
+          <h3 style="margin-top:1.2rem">${g} <span class="mono small muted">${tr.filter(x=>x.typ===g).length}</span></h3>
+          <div class="chaplist">
+            ${tr.filter(x=>x.typ===g).slice(0,12).map(x=>`
+              <button class="chap" onclick="${x.aktion}">
+                <span class="chap-body"><b>${esc(x.titel)}</b><small>${esc(String(x.text).slice(0,150))}</small></span>
+                <span class="pill teal">öffnen</span>
+              </button>`).join('')}
+          </div>
+          ${tr.filter(x=>x.typ===g).length>12?`<p class="small muted">… und ${tr.filter(x=>x.typ===g).length-12} weitere. Suche eingrenzen.</p>`:''}`).join('')}`}`;
+}
+
+/* ===================== LEITNER-SYSTEM ===================== */
+const BOX_TAGE = [0, 1, 3, 7, 21];
+if(!S.box) S.box = JSON.parse(localStorage.getItem('pmw_box') || '{}');
+if(!S.stat) S.stat = JSON.parse(localStorage.getItem('pmw_stat') || '{}');
+const boxSave = () => { localStorage.setItem('pmw_box', JSON.stringify(S.box)); localStorage.setItem('pmw_stat', JSON.stringify(S.stat)); };
+const heuteStr = () => new Date().toISOString().slice(0,10);
+const tageSeit = iso => Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+
+function boxEintrag(schl){ return S.box[schl] || {b:1, zuletzt:null}; }
+function boxFaellig(schl){
+  const e = boxEintrag(schl);
+  if(!e.zuletzt) return true;
+  return tageSeit(e.zuletzt) >= BOX_TAGE[Math.min(e.b, BOX_TAGE.length) - 1];
+}
+function boxBuchen(schl, richtig){
+  const e = boxEintrag(schl);
+  e.b = richtig ? Math.min(e.b + 1, 5) : 1;
+  e.zuletzt = heuteStr();
+  S.box[schl] = e;
+  const t = heuteStr();
+  S.stat[t] = S.stat[t] || {r:0, f:0};
+  S.stat[t][richtig ? 'r' : 'f']++;
+  boxSave();
+}
+function boxUebersicht(praefix, gesamt){
+  const v = [0,0,0,0,0,0]; let faellig = 0, beruehrt = 0;
+  for(let i=0;i<gesamt;i++){
+    const schl = praefix + i, e = S.box[schl];
+    if(!e){ v[0]++; continue; }
+    beruehrt++; v[e.b]++;
+    if(boxFaellig(schl)) faellig++;
+  }
+  return {v, faellig, beruehrt, neu:v[0]};
+}
+function boxBalken(u, gesamt){
+  const farben = ['#294159','#f87171','#fb923c','#f5b74e','#4ade80','#2dd4bf'];
+  const lab = ['neu','Box 1','Box 2','Box 3','Box 4','Box 5'];
+  return `<div style="display:flex;height:16px;border-radius:4px;overflow:hidden;border:1px solid var(--line)">
+      ${u.v.map((n,i)=>n?`<div title="${lab[i]}: ${n}" style="width:${n/gesamt*100}%;background:${farben[i]}"></div>`:'').join('')}
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:.7rem;margin-top:.45rem;font-size:.74rem;color:var(--ink-dim)">
+      ${u.v.map((n,i)=>n?`<span><span style="display:inline-block;width:10px;height:8px;border-radius:2px;background:${farben[i]};vertical-align:middle"></span> ${lab[i]} ${n}</span>`:'').join('')}
+    </div>`;
+}
+function lernStatistik(tage){
+  const d = [];
+  for(let i=tage-1;i>=0;i--){
+    const t = new Date(Date.now() - i*86400000).toISOString().slice(0,10);
+    d.push({t, ...(S.stat[t] || {r:0,f:0})});
+  }
+  return d;
+}
+function statistikKarte(){
+  const d = lernStatistik(14);
+  const max = Math.max(1, ...d.map(x=>x.r+x.f));
+  const gesamtR = d.reduce((a,x)=>a+x.r,0), gesamtF = d.reduce((a,x)=>a+x.f,0);
+  const aktiv = d.filter(x=>x.r+x.f>0).length;
+  return `
+  <div class="card">
+    <h3>Lernstatistik der letzten 14 Tage</h3>
+    <div class="statgrid" style="margin:.8rem 0">
+      <div class="stat"><b>${gesamtR+gesamtF}</b><small>Wiederholungen</small></div>
+      <div class="stat"><b>${gesamtR+gesamtF?Math.round(gesamtR/(gesamtR+gesamtF)*100):0} %</b><small>davon richtig</small></div>
+      <div class="stat"><b>${aktiv}</b><small>aktive Tage</small></div>
+    </div>
+    <div style="display:flex;align-items:flex-end;gap:3px;height:70px">
+      ${d.map(x=>{const h=(x.r+x.f)/max*100; return `<div title="${new Date(x.t).toLocaleDateString('de-DE')}: ${x.r} richtig, ${x.f} falsch"
+        style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%">
+        ${x.f?`<div style="height:${x.f/max*100}%;background:var(--red);border-radius:2px 2px 0 0"></div>`:''}
+        ${x.r?`<div style="height:${x.r/max*100}%;background:var(--teal)"></div>`:''}
+        ${!(x.r+x.f)?`<div style="height:3px;background:#22384f;border-radius:2px"></div>`:''}
+      </div>`}).join('')}
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--ink-faint);margin-top:.3rem">
+      <span>vor 14 Tagen</span><span>heute</span>
+    </div>
+  </div>`;
+}
+
 /* ===================== NAVIGATION ===================== */
 const VIEWS = [
- ['start','Start'],['lernen','Lernen'],['projekt','IHK-Projekt'],['ablauf','Ablaufplan'],['rechner','Rechner'],['quiz','Quiz'],
+ ['start','Start'],['lernen','Lernen'],['suche','Suche'],['projekt','IHK-Projekt'],['ablauf','Ablaufplan'],['rechner','Rechner'],['quiz','Quiz'],
  ['karten','Karteikarten'],['faelle','Fallstudien'],['pruefung','Prüfung'],['formeln','Formeln'],['glossar','Glossar'],['info','Info']
 ];
 function buildNav(){
@@ -5773,6 +6035,7 @@ function go(id){
   if(id==='faelle') renderFaelle();
   if(id==='ablauf') renderAblauf();
   if(id==='projekt') renderProjekt();
+  if(id==='suche') renderSuche();
 }
 
 /* ===================== FORTSCHRITT ===================== */
@@ -5943,7 +6206,8 @@ function calcNetz(){
   $('#calcBody').innerHTML = `
   <div class="card">
     <h3>Netzplan – Vorgangsknoten</h3>
-    <p class="small muted">Vorgänger als Kürzel trennen mit Komma, Semikolon oder Leerzeichen, z. B. <code>B,C</code>. Leer lassen für Startvorgänge. Bei der Dauer sind Komma und Punkt als Dezimaltrennzeichen erlaubt.</p>
+    <p class="small muted">Vorgänger mit Komma, Semikolon oder Leerzeichen trennen, z. B. <code>B,C</code>. Leer lassen für Startvorgänge. Dezimaldauern mit Komma oder Punkt.<br>
+    <b>Zeitabstände:</b> <code>B+10</code> setzt einen Minimalabstand von 10 Zeiteinheiten nach B, etwa eine Lieferzeit. <code>B-2</code> setzt zusätzlich einen Maximalabstand von 2: der Vorgang beginnt frühestens nach B und spätestens 2 Einheiten nach dessen Ende.</p>
     <div class="tblwrap"><table id="npTbl">
       <tr><th>ID</th><th>Vorgang</th><th>Dauer</th><th>Vorgänger</th><th></th></tr>
       ${NP.map((r,i)=>`<tr>
@@ -5966,6 +6230,7 @@ function runNetz(){
   const fehler = npPruefe(rows);
   if(fehler) return $('#npOut').innerHTML = `<div class="note warn"><b>Eingabe prüfen</b>${fehler}</div>`;
   const sol = npSolve(rows);
+  if(sol.unloesbar) return $('#npOut').innerHTML = `<div class="note warn"><b>Zeitbedingungen widersprüchlich</b>Die gesetzten Minimal- und Maximalabstände lassen sich nicht gleichzeitig erfüllen. Prüfe insbesondere Maximalabstände, die einen Vorgang gleichzeitig nach vorn und nach hinten zwingen.</div>`;
   $('#npOut').innerHTML = `
   <div class="calcbox">
     <div class="eyebrow">Netzplan als Vorgangsknotendiagramm</div>
@@ -6441,8 +6706,17 @@ const NPU = [
 
 /* Zahl mit Komma oder Punkt einlesen */
 function npZahl(v){ const n = parseFloat(String(v).replace(',','.').replace(/[^0-9.\-]/g,'')); return isFinite(n) ? n : 0; }
-/* Vorgängerliste tolerant trennen: Komma, Semikolon, Schrägstrich, Leerzeichen */
-function npTrenne(v){ return String(v||'').toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean); }
+/* Vorgängerliste mit optionalem Zeitabstand lesen.
+   Syntax: B (Normalfolge) · B+10 (Minimalabstand 10) · B-2 (Maximalabstand 2) */
+function npVorg(v){
+  return String(v||'').toUpperCase().split(/[;,/]|\s+(?![+-])/).map(x=>x.trim()).filter(Boolean).map(t=>{
+    const m = t.match(/^([A-Z0-9]+)\s*([+-])\s*([0-9]+(?:[.,][0-9]+)?)$/);
+    if(m) return {id:m[1], art: m[2]==='+' ? 'min' : 'max', abstand: npZahl(m[3])};
+    return {id: t.replace(/[^A-Z0-9]/g,''), art:'min', abstand:0};
+  }).filter(x=>x.id);
+}
+/* nur die Kürzel */
+function npTrenne(v){ return npVorg(v).map(x=>x.id); }
 /* Eingaben prüfen – liefert eine Fehlermeldung oder null */
 function npPruefe(rows){
   if(!rows.length) return 'Es ist kein Vorgang erfasst.';
@@ -6468,32 +6742,83 @@ function npPruefe(rows){
   return null;
 }
 
-/* Berechnung eines Netzplans – liefert Kennzahlen je Vorgang */
+/* Berechnung eines Netzplans – liefert Kennzahlen je Vorgang.
+   Unterstützt Normalfolgen sowie Minimal- und Maximalabstände. Gelöst wird das
+   System der Zeitbedingungen durch Relaxation (Bellman-Ford), damit auch
+   Maximalabstände korrekt rückwirken können. */
 function npSolve(rows){
-  const map={}; rows.forEach(r=>map[String(r.id).toUpperCase()]={...r, id:String(r.id).toUpperCase(), d:npZahl(r.d), pre:npTrenne(r.v)});
-  const ids=Object.keys(map), order=[], seen={};
-  const visit=id=>{ if(seen[id])return; seen[id]=1; map[id].pre.forEach(visit); if(!order.includes(id))order.push(id); };
-  ids.forEach(id=>{ if(!seen[id]) visit(id); });
-  // sicherer topologischer Durchlauf
-  order.length=0; const fertig={};
-  while(order.length<ids.length){
-    let bewegt=false;
-    for(const id of ids){ if(fertig[id])continue;
-      if(map[id].pre.every(p=>fertig[p])){ fertig[id]=1; order.push(id); bewegt=true; } }
-    if(!bewegt) break;
+  const map = {};
+  rows.forEach(r => map[String(r.id).toUpperCase()] = {
+    ...r, id:String(r.id).toUpperCase(), d:npZahl(r.d), vorg:npVorg(r.v), pre:npTrenne(r.v)});
+  const ids = Object.keys(map);
+  ids.forEach(i => { map[i].succ = []; map[i].nachf = []; });
+  ids.forEach(i => map[i].vorg.forEach(x => { if(map[x.id]){ map[x.id].succ.push(i); map[x.id].nachf.push({art:x.art, abstand:x.abstand, id:i}); } }));
+
+  /* Vorwärts: frühester Anfang */
+  ids.forEach(i => map[i].faz = 0);
+  const grenze = ids.length * ids.length + 20;
+  let runde = 0, geaendert = true;
+  while(geaendert && runde++ < grenze){
+    geaendert = false;
+    ids.forEach(i => map[i].vorg.forEach(x => {
+      const p = map[x.id]; if(!p) return;
+      if(x.art === 'min'){
+        const soll = p.faz + p.d + x.abstand;
+        if(soll > map[i].faz + 1e-9){ map[i].faz = soll; geaendert = true; }
+      } else {
+        /* Maximalabstand gilt zusätzlich zur normalen Ende-Anfang-Beziehung:
+           der Nachfolger beginnt frühestens nach dem Vorgänger und spätestens
+           dessen Abstand danach. Deshalb kann der Vorgänger nach hinten rücken. */
+        const mindest = p.faz + p.d;
+        if(mindest > map[i].faz + 1e-9){ map[i].faz = mindest; geaendert = true; }
+        const soll = map[i].faz - p.d - x.abstand;
+        if(soll > p.faz + 1e-9){ p.faz = soll; geaendert = true; }
+      }
+    }));
   }
-  order.forEach(id=>{ const v=map[id];
-    v.faz = v.pre.length ? Math.max(...v.pre.map(p=>map[p].fez)) : 0;
-    v.fez = v.faz + v.d; });
-  const dauer = Math.max(...ids.map(i=>map[i].fez));
-  ids.forEach(i=>map[i].succ = ids.filter(j=>map[j].pre.includes(i)));
-  [...order].reverse().forEach(id=>{ const v=map[id];
-    v.sez = v.succ.length ? Math.min(...v.succ.map(s=>map[s].saz)) : dauer;
-    v.saz = v.sez - v.d; });
-  ids.forEach(i=>{ const v=map[i];
-    v.gp = v.saz - v.faz;
-    v.fp = v.succ.length ? Math.min(...v.succ.map(s=>map[s].faz)) - v.fez : dauer - v.fez; });
-  return {map, order, dauer, krit: order.filter(i=>map[i].gp===0)};
+  const unloesbar = geaendert;
+  ids.forEach(i => map[i].fez = map[i].faz + map[i].d);
+  const dauer = ids.length ? Math.max(...ids.map(i => map[i].fez)) : 0;
+
+  /* Rückwärts: spätester Anfang */
+  ids.forEach(i => map[i].saz = dauer - map[i].d);
+  runde = 0; geaendert = true;
+  while(geaendert && runde++ < grenze){
+    geaendert = false;
+    ids.forEach(i => map[i].vorg.forEach(x => {
+      const p = map[x.id]; if(!p) return;
+      if(x.art === 'min'){
+        const soll = map[i].saz - p.d - x.abstand;
+        if(soll < p.saz - 1e-9){ p.saz = soll; geaendert = true; }
+      } else {
+        const spaet = map[i].saz - p.d;
+        if(spaet < p.saz - 1e-9){ p.saz = spaet; geaendert = true; }
+        const soll = p.saz + p.d + x.abstand;
+        if(soll < map[i].saz - 1e-9){ map[i].saz = soll; geaendert = true; }
+      }
+    }));
+  }
+  const rd = n => Math.round(n*1e6)/1e6;
+  ids.forEach(i => { const v = map[i];
+    v.saz = rd(v.saz); v.faz = rd(v.faz); v.fez = rd(v.fez);
+    v.sez = rd(v.saz + v.d);
+    v.gp = rd(v.saz - v.faz);
+    const grenzen = v.nachf.map(n => map[n.id].faz - (n.art === 'min' ? n.abstand : 0));
+    v.fp = grenzen.length ? rd(Math.min(...grenzen) - v.fez) : rd(dauer - v.fez);
+    if(!isFinite(v.fp)) v.fp = rd(dauer - v.fez);
+  });
+
+  /* topologische Reihenfolge für die Darstellung */
+  const order = [], fertig = {};
+  let bewegt = true;
+  while(order.length < ids.length && bewegt){
+    bewegt = false;
+    for(const i of ids){ if(fertig[i]) continue;
+      if(map[i].pre.every(p => !map[p] || fertig[p])){ fertig[i] = 1; order.push(i); bewegt = true; } }
+  }
+  ids.forEach(i => { if(!fertig[i]) order.push(i); });
+
+  return {map, order, dauer: rd(dauer), krit: order.filter(i => Math.abs(map[i].gp) < 1e-9), unloesbar};
 }
 
 /* Zufallsaufgabe erzeugen */
@@ -6531,7 +6856,8 @@ const NPD = {W:142, H:98, GX:74, GY:26};
 function npLayout(sol){
   const {map, order} = sol;
   const col = {};
-  order.forEach(id => { col[id] = map[id].pre.length ? Math.max(...map[id].pre.map(p=>col[p]))+1 : 0; });
+  order.forEach(id => { const gueltig = map[id].pre.filter(p=>col[p]!==undefined);
+    col[id] = gueltig.length ? Math.max(...gueltig.map(p=>col[p]))+1 : 0; });
   const cols = Math.max(...Object.values(col)) + 1;
   const proSpalte = {}, reihe = {};
   order.forEach(id => { const c = col[id]; proSpalte[c] = proSpalte[c] || []; reihe[id] = proSpalte[c].length; proSpalte[c].push(id); });
@@ -6550,8 +6876,8 @@ function npDiagramm(st, sol){
   const idx = {}; st.rows.forEach((r,j)=>idx[r.id]=j);
   const pfeile = [];
   st.rows.forEach(r=>{
-    (String(r.v||'').split(',').map(x=>x.trim()).filter(Boolean)).forEach(p=>{
-      const a = lay.pos[p], b = lay.pos[r.id]; if(!a||!b) return;
+    npVorg(r.v).forEach(vx=>{ const p = vx.id;
+      const a = lay.pos[p], b = lay.pos[String(r.id).toUpperCase()]; if(!a||!b) return;
       const x1 = a.x + NPD.W, y1 = a.y + NPD.H/2, x2 = b.x - 6, y2 = b.y + NPD.H/2;
       const mx = (x1 + x2) / 2;
       pfeile.push(`<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" fill="none" stroke="#4a6b8a" stroke-width="1.6" marker-end="url(#npArrow)"/>`);
@@ -6761,9 +7087,9 @@ function npDiagrammStatisch(rows, sol){
   const lay = npLayout(sol);
   const pfeile = [];
   rows.forEach(r=>{
-    (String(r.v||'').split(',').map(x=>x.trim()).filter(Boolean)).forEach(p=>{
-      const a = lay.pos[p], b = lay.pos[r.id]; if(!a||!b) return;
-      const kritisch = sol.map[p] && sol.map[r.id] && sol.map[p].gp===0 && sol.map[r.id].gp===0;
+    npVorg(r.v).forEach(vx=>{ const p = vx.id;
+      const a = lay.pos[p], b = lay.pos[String(r.id).toUpperCase()]; if(!a||!b) return;
+      const kritisch = sol.map[p] && sol.map[String(r.id).toUpperCase()] && sol.map[p].gp===0 && sol.map[String(r.id).toUpperCase()].gp===0;
       const x1 = a.x + NPD.W, y1 = a.y + NPD.H/2, x2 = b.x - 6, y2 = b.y + NPD.H/2;
       const mx = (x1 + x2) / 2;
       pfeile.push(`<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" fill="none"
@@ -7239,21 +7565,34 @@ function renderQuiz(){
   if(QZ) return drawQuiz();
   const cats = [...new Set(Q.map(q=>q.c))];
   const done = Object.keys(S.quiz).length, right = Object.values(S.quiz).filter(v=>v===1).length;
+  const u = boxUebersicht('q', Q.length);
   $('#v-quiz').innerHTML = `
     <h2>Quiz</h2>
     <p class="muted small">${Q.length} Fragen im Pool. Bearbeitet: ${done} · richtig beim ersten Versuch: ${right}.</p>
+    <div class="card">
+      <h3>Wiederholung nach dem Leitner-Prinzip</h3>
+      <p class="small muted">Richtig beantwortete Fragen wandern eine Box weiter und kommen erst nach 1, 3, 7 beziehungsweise 21 Tagen wieder. Falsch beantwortete fallen zurück in Box 1.</p>
+      <div style="margin:.8rem 0">${boxBalken(u, Q.length)}</div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <button class="btn primary" onclick="startQuiz('faellig')" ${u.faellig?'':'disabled'}>Heute fällig: ${u.faellig}</button>
+        <button class="btn" onclick="startQuiz('neu')" ${u.neu?'':'disabled'}>Noch nie gesehen: ${u.neu}</button>
+        <button class="btn ghost sm" onclick="startQuiz('falsch')">Zuletzt falsch beantwortete</button>
+      </div>
+      ${u.faellig===0 && u.beruehrt>0 ? `<p class="small" style="margin:.7rem 0 0;color:var(--ok)">Für heute ist alles wiederholt. Die nächste Fälligkeit ergibt sich aus den Boxabständen.</p>`:''}
+    </div>
     <div class="card">
       <h3>Themenbereich wählen</h3>
       <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.9rem">
         <button class="btn primary" onclick="startQuiz('alle')">Alle Themen (${Q.length})</button>
         ${cats.map(c=>`<button class="btn" onclick="startQuiz('${c}')">${c} (${Q.filter(q=>q.c===c).length})</button>`).join('')}
       </div>
-      <button class="btn sm ghost" onclick="startQuiz('falsch')">Nur zuvor falsch beantwortete Fragen</button>
     </div>`;
 }
 function startQuiz(cat){
   let idx = Q.map((q,i)=>i);
   if(cat==='falsch') idx = idx.filter(i=>S.quiz[i]===0);
+  else if(cat==='faellig') idx = idx.filter(i=>boxFaellig('q'+i));
+  else if(cat==='neu') idx = idx.filter(i=>!S.box['q'+i]);
   else if(cat!=='alle') idx = idx.filter(i=>Q[i].c===cat);
   if(!idx.length){ QZ=null; renderQuiz(); alert('Für diese Auswahl liegen keine Fragen vor.'); return; }
   QZ = {set:shuffle(idx), pos:0, score:0, answered:false, cat};
@@ -7263,7 +7602,7 @@ function drawQuiz(){
   const q = Q[QZ.set[QZ.pos]];
   $('#v-quiz').innerHTML = `
     <div class="qmeta">
-      <span>${QZ.cat==='alle'?'Alle Themen':QZ.cat==='falsch'?'Wiederholung':QZ.cat} · Frage ${QZ.pos+1}/${QZ.set.length}</span>
+      <span>${({alle:'Alle Themen',falsch:'Wiederholung',faellig:'Heute fällig',neu:'Neue Fragen'})[QZ.cat]||QZ.cat} · Frage ${QZ.pos+1}/${QZ.set.length}</span>
       <span>Richtig: ${QZ.score}</span>
     </div>
     <div class="bar" style="margin-bottom:1rem"><i style="width:${QZ.pos/QZ.set.length*100}%"></i></div>
@@ -7281,6 +7620,7 @@ function answer(i){
   const qi = QZ.set[QZ.pos], q = Q[qi], ok = i===q.a;
   if(ok) QZ.score++;
   if(S.quiz[qi]===undefined) S.quiz[qi] = ok?1:0; else if(ok) S.quiz[qi]=1;
+  boxBuchen('q'+qi, ok);
   S.save(); updateProgress();
   document.querySelectorAll('#qOpts .opt').forEach((b,j)=>{
     b.disabled = true;
@@ -7314,7 +7654,7 @@ function finishQuiz(){
 }
 
 /* ===================== KARTEIKARTEN ===================== */
-let KZ = {set:[], pos:0, flip:false, cat:'alle'};
+let KZ = {set:[], pos:0, flip:false, cat:'alle', nurFaellig:false};
 function renderKarten(){
   const cats = ['alle', ...new Set(K.map(k=>k.c))];
   if(!KZ.set.length) KZ.set = shuffle(K.map((_,i)=>i));
@@ -7332,11 +7672,17 @@ function renderKarten(){
       </div>
     </div>
     <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-      <button class="btn" onclick="moveKarte(-1)">← Zurück</button>
-      <button class="btn primary" onclick="moveKarte(1)">Weiter →</button>
-      <button class="btn ghost sm" onclick="KZ.set=shuffle(KZ.set);KZ.pos=0;KZ.flip=false;renderKarten()">Mischen</button>
+      <button class="btn" onclick="karteBuchen(false)">✗ Noch nicht gewusst</button>
+      <button class="btn primary" onclick="karteBuchen(true)">✓ Gewusst</button>
     </div>
-    <p class="small muted" style="margin-top:.9rem">${K.length} Karten im Stapel. Die Karte passt ihre Höhe automatisch an den Text an.</p>`;
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem">
+      <button class="btn sm ghost" onclick="moveKarte(-1)">← Zurück</button>
+      <button class="btn sm ghost" onclick="moveKarte(1)">Überspringen →</button>
+      <button class="btn sm ghost" onclick="KZ.set=shuffle(KZ.set);KZ.pos=0;KZ.flip=false;renderKarten()">Mischen</button>
+      <button class="btn sm ${KZ.nurFaellig?'primary':''}" onclick="KZ.nurFaellig=!KZ.nurFaellig;filterKarten(KZ.cat)">Nur fällige</button>
+    </div>
+    <div style="margin-top:.9rem">${boxBalken(boxUebersicht('k', K.length), K.length)}</div>
+    <p class="small muted" style="margin-top:.6rem">${K.length} Karten im Stapel, davon ${boxUebersicht('k',K.length).faellig} heute fällig. Bewertete Karten wandern nach dem Leitner-Prinzip in die nächste Box.</p>`;
   fitCard();
 }
 /* Höhe an den längeren der beiden Karteninhalte anpassen, damit nichts abgeschnitten wird */
@@ -7356,8 +7702,18 @@ function fitCard(){
 window.addEventListener('resize', ()=>{ if(document.getElementById('flipCard')) fitCard(); });
 function filterKarten(c){
   KZ.cat=c; KZ.pos=0; KZ.flip=false;
-  KZ.set = shuffle(K.map((_,i)=>i).filter(i=> c==='alle' || K[i].c===c));
+  let liste = K.map((_,i)=>i).filter(i=> c==='alle' || K[i].c===c);
+  if(KZ.nurFaellig){
+    const f = liste.filter(i=>boxFaellig('k'+i));
+    if(f.length) liste = f; else { KZ.nurFaellig = false; alert('In dieser Auswahl ist heute keine Karte fällig. Es wird wieder der ganze Stapel gezeigt.'); }
+  }
+  KZ.set = shuffle(liste);
   renderKarten();
+}
+function karteBuchen(gewusst){
+  boxBuchen('k' + KZ.set[KZ.pos], gewusst);
+  if(KZ.pos + 1 < KZ.set.length){ KZ.pos++; KZ.flip = false; renderKarten(); }
+  else { KZ.flip = false; renderKarten(); alert('Stapel durchgearbeitet.'); }
 }
 function moveKarte(d){
   KZ.pos = (KZ.pos + d + KZ.set.length) % KZ.set.length; KZ.flip=false; renderKarten();
@@ -7658,8 +8014,10 @@ function renderInfo(){
       <p class="small">Projektmanagement ist Bestandteil von Teil 1 der gestreckten Abschlussprüfung sowie des Prüfungsbereichs „Planen eines Softwareproduktes" bzw. der Projektarbeit in Teil 2. Die Inhalte orientieren sich am Rahmenlehrplan, an DIN 69901 und an gängiger Prüfungspraxis. Verbindlich sind allein die Vorgaben deiner zuständigen Kammer.</p>
       <h4>Datenspeicherung</h4>
       <p class="small">Lernfortschritt und Quizergebnisse liegen ausschließlich im Local Storage deines Browsers. Es werden keine Daten übertragen.</p>
-      <button class="btn sm" onclick="if(confirm('Wirklich allen Lernfortschritt löschen?')){localStorage.removeItem('pmw_read');localStorage.removeItem('pmw_quiz');localStorage.removeItem('pmw_abl');localStorage.removeItem('pmw_pa');localStorage.removeItem('pmw_paa');localStorage.removeItem('pmw_paz');localStorage.removeItem('pmw_pas');localStorage.removeItem('pmw_lph');localStorage.removeItem('pmw_dok');localStorage.removeItem('pmw_akt');localStorage.removeItem('pmw_gt');localStorage.removeItem('pmw_rub');S.read=[];S.quiz={};S.abl={};S.pa={};S.paa={};S.save();updateProgress();renderInfo();alert('Lernfortschritt zurückgesetzt.')}">Lernfortschritt zurücksetzen</button>
+      <button class="btn sm" onclick="if(confirm('Wirklich allen Lernfortschritt löschen?')){localStorage.removeItem('pmw_read');localStorage.removeItem('pmw_quiz');localStorage.removeItem('pmw_abl');localStorage.removeItem('pmw_pa');localStorage.removeItem('pmw_paa');localStorage.removeItem('pmw_paz');localStorage.removeItem('pmw_pas');localStorage.removeItem('pmw_lph');localStorage.removeItem('pmw_dok');localStorage.removeItem('pmw_akt');localStorage.removeItem('pmw_gt');localStorage.removeItem('pmw_rub');localStorage.removeItem('pmw_box');localStorage.removeItem('pmw_stat');S.box={};S.stat={};S.read=[];S.quiz={};S.abl={};S.pa={};S.paa={};S.save();updateProgress();renderInfo();alert('Lernfortschritt zurückgesetzt.')}">Lernfortschritt zurücksetzen</button>
     </div>
+    ${sicherungKarte()}
+    ${statistikKarte()}
     <div class="card">
       <h3>Zur Startseite hinzufügen</h3>
       <p class="small muted">iOS: Teilen-Symbol → „Zum Home-Bildschirm". Android: Menü → „App installieren" bzw. „Zum Startbildschirm hinzufügen". Danach startet die App im Vollbild und funktioniert auch offline.</p>
@@ -7668,7 +8026,7 @@ function renderInfo(){
 
 /* ===================== INIT ===================== */
 buildNav();
-renderStart(); renderLernen(); renderRechner(); renderQuiz(); renderKarten(); renderPruefung(); renderProjekt(); renderAblauf(); renderFaelle(); renderFormeln(); renderGlossar(); renderInfo();
+renderStart(); renderLernen(); renderRechner(); renderQuiz(); renderKarten(); renderPruefung(); renderSuche(); renderProjekt(); renderAblauf(); renderFaelle(); renderFormeln(); renderGlossar(); renderInfo();
 updateProgress();
 
 /* Manifest zur Laufzeit einhängen (Single-File-fähig) */
